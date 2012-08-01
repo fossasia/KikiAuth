@@ -1,0 +1,4 @@
+
+config 'oauth_services' 'WifiDog'
+	option 'services' 'google facebook'
+

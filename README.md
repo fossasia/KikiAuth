@@ -10,3 +10,4 @@ You must have a copy of LuCI source tree (luci-0.10).
 Copy KikiAuth folder to luci-0.10/applications.
 Run
     make runhttpd
+to compile.

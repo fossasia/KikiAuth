@@ -1,4 +1,6 @@
 
-config 'oauth_services' 'WifiDog'
+config 'oauth_services' 'oauth2'
 	option 'services' 'google facebook'
 
+config 'oauth_services' 'oauth1'
+	option 'services' 'twitter'

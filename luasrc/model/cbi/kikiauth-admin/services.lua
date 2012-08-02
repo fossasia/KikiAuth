@@ -14,11 +14,13 @@ $Id$
 ]]--
 m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to work with WifiDog. KikiAuth support logging in with popular OAuth services account.")) -- We want to edit the uci config file /etc/config/kikiauth
 
-s = m:section(TypedSection, "oauth_services", translate("OAuth services for captive portal"))
-s.anonymous = true
-sv = s:option(MultiValue, "services", "Enabled services")
+s = m:section(NamedSection, "oauth2", "oauth_services", translate("OAuth v2.0 services"))
+sv = s:option(MultiValue, "services", "Enabled")
 sv:value("google", "Google");
 sv:value("facebook", "Facebook")
+
+s = m:section(NamedSection, "oauth1", "oauth_services", translate("OAuth v1.0 services"))
+sv = s:option(MultiValue, "services", "Enabled")
 sv:value("twitter", "Twitter")
 
 return m

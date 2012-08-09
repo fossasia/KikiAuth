@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body >
+<script type="text/javascript">
+	var loginPageUrl = "http://localhost/oauth/login.htm";
+	var gwID="192.168.1.149";
+	// First, parse the query string
+var params = {}, queryString = location.hash.substring(1),
+    regex = /([^&=]+)=([^&]*)/g, m;
+while (m = regex.exec(queryString)) {
+  params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+}
+//check the query string to give a proper response
+if(params['access_token']!= null) {
+window.open("http://"+gwID+"/wifidog/auth?token="+params['access_token'],"_parent");
+}
+else if(params['error']!=null) {window.open(loginPageUrl,"_parent");}
+</script>
+</body>
+</html>

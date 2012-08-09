@@ -1,0 +1,44 @@
+ <html>    
+   <body> 
+   <script>
+	function getGoogleResponse(response){
+		var divAuthResponse = document.getElementById('divAuthResponse');
+		if(response.error!=null){			
+			var FBRequestUri="https://graph.facebook.com/me?access_token="+accessToken+"&callback=getFBResponse";
+			//use jsonp to call the APIs
+			var script = document.createElement('script');
+			script.src=FBRequestUri;
+			document.body.appendChild(script);			
+		}
+		else {			
+			writeResponse("Auth: 1");
+		}
+	}
+
+	function getFBResponse(response){
+		if(response.error==null){
+			writeResponse("Auth: 1");
+		}
+		else {
+			writeResponse("Auth: 0");
+		}
+	}
+
+	function writeResponse(authResponse){
+		var responseText;
+		responseText = document.createTextNode(authResponse);
+		divAuthResponse.appendChild(responseText);
+	}
+
+	var accessToken=window.location.search.substring(1).split("&")[2].split("=")[1];
+	//try to access Google APIs by the accessToken
+	var googleRequestUri="https://www.googleapis.com/oauth2/v2/userinfo?access_token="+accessToken+"&callback=getGoogleResponse";
+	//use jsonp to call the APIs
+	var script = document.createElement('script');
+	script.src=googleRequestUri;
+	document.body.appendChild(script);
+   </script>
+	<div id="divAuthResponse"></div>
+   </body> 
+  </html>
+

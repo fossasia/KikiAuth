@@ -1,6 +1,13 @@
 
-config 'oauth_services' 'oauth2'
-	option 'services' 'google facebook'
+config 'oauth_services' 'facebook'
+	option 'enabled' '1'
+	option 'app_id' '420756987974770'
 
-config 'oauth_services' 'oauth1'
-	option 'services' 'twitter'
+config 'oauth_services' 'google'
+	option 'enabled' '1'
+	option 'app_id' '396818136722.apps.googleusercontent.com'
+
+config 'oauth_services' 'twitter'
+
+config 'clients' 'keepalive'
+

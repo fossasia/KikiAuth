@@ -1,0 +1,21 @@
+<html>
+<head>
+<script type="text/javascript">
+	var width=screen.width/2+50,height=screen.height/2,left=screen.width/4,top=screen.height/4;
+	var gwAddress = "http://192.168.2.1/cgi-bin/luci/kikiauth/";
+	function googleOAuth(){
+		window.open("https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&redirect_uri=http://localhost/oauth/google&response_type=token&client_id=396818136722.apps.googleusercontent.com","_self");
+//,"left="+left+",width="+width+",height="+height);
+	}
+
+	function facebookOAuth(){
+		window.open(gwAddress+"oauth/facebookcallback","_self");
+//,"left="+left+",width="+width+",height="+height);
+	}
+	</script>
+</head>
+    <body>	
+        <input type='button' value='Login with Google' onClick='googleOAuth()'/>
+	<input type='button' value='Login with Facebook' onClick='facebookOAuth()' />
+    </body>
+</html>

@@ -14,13 +14,31 @@ $Id$
 ]]--
 m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to work with WifiDog. KikiAuth support logging in with popular OAuth services account.")) -- We want to edit the uci config file /etc/config/kikiauth
 
-s = m:section(NamedSection, "oauth2", "oauth_services", translate("OAuth v2.0 services"))
-sv = s:option(MultiValue, "services", "Enabled")
-sv:value("google", "Google");
-sv:value("facebook", "Facebook")
+s = m:section(NamedSection, "facebook", "oauth_services", "Facebook",
+              translate("You can register your own Facebook app and use its parameters here."))
+s:option(Flag, "enabled", translate("Enabled?"))
+p = s:option(Value, "app_id", "App ID/ Client ID")
+p:depends('enabled', '1')
+p.default = '420756987974770'
+p = s:option(Value, "redirect_uri", "Redirect URI",
+             translate("This URI has to be match the one you registered for your Facebook app."))
+p:depends('enabled', '1')
 
-s = m:section(NamedSection, "oauth1", "oauth_services", translate("OAuth v1.0 services"))
-sv = s:option(MultiValue, "services", "Enabled")
-sv:value("twitter", "Twitter")
+s = m:section(NamedSection, "google", "oauth_services", "Google",
+              translate("You can register your own Google app and use its parameters here."))
+s:option(Flag, "enabled", translate("Enabled?"))
+p = s:option(Value, "app_id", "App ID/ Client ID")
+p:depends('enabled', '1')
+p.default = '396818136722.apps.googleusercontent.com'
+p = s:option(Value, "redirect_uri", "Redirect URI",
+             translate("This URI has to be match the one you registered for your Google app."))
+p:depends('enabled', '1')
+
+s = m:section(NamedSection, "twitter", "oauth_services", "Twitter")
+s:option(Flag, "enabled", translate("Enabled?"))
+p = s:option(Value, "app_id", "App ID/ Client ID")
+p:depends('enabled', '1')
+p = s:option(Value, "redirect_uri", "Redirect URI")
+p:depends('enabled', '1')
 
 return m

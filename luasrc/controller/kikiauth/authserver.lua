@@ -40,6 +40,22 @@ function action_auth_response_to_gw()
 		response = wget:read("*all")
 		wget:close()
 	end
+
+	--[[
+	local logfile = "/var/log/luciaa.log"
+	if nixio.fs.access(logfile) then
+		local dd = os.date('%Y/%m/%d')
+		local data = "%s: %s \n" % {dd, url}
+		data = data .. "1: " .. l .. "\n"
+		local wget = assert(io.popen("wget --no-check-certificate -O- %s" % {url}))
+	    if wget then
+			data = data .. "2: " .. wget:read("*all")
+			wget:close()
+		end
+		nixio.fs.writefile(logfile, data)
+	end
+	]]--
+
 	if response then
 		luci.http.write("Auth: 1")
 	else

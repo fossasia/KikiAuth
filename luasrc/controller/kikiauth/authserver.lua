@@ -33,14 +33,14 @@ end
 
 function action_auth_response_to_gw()
 	local token = luci.http.formvalue("token")
-	local wget = assert(io.popen("wget --no-check-certificate -qO- \
-	                              https://graph.facebook.com/me?access_token=%s"
-	                              % {token}))
+	local url = "https://graph.facebook.com/me?access_token=%s" % {token}
+	local response
+	local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
 	if wget then
-		local l = wget:read("*all")
+		response = wget:read("*all")
 		wget:close()
 	end
-	if l then
+	if response then
 		luci.http.write("Auth: 1")
 	else
 		luci.http.write("Auth: 6")

@@ -3,22 +3,24 @@
      <title>Client-side OAuth Example</title> 
    </head> 
    <body> 
-   <script>    
-     var appID = 420756987974770;
-     if (window.location.hash.length == 0) {
-       var path = 'https://www.facebook.com/dialog/oauth?';
-   var queryParams = ['client_id=' + appID,
-     'redirect_uri=http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback/',
-     'response_type=token',
-     'status=abc'];
-   var query = queryParams.join('&');
-   var url = path + query;
-   window.open(url,"_parent");
-     } else {
-       var accessToken = window.location.hash.substring(1).split("&")[0].split("=")[1];
-       var gwRedirectURI = "http://192.168.2.1:2060/wifidog/auth?token="+accessToken;
-       window.open(gwRedirectURI,"_self");
-     }
+   <script>   
+	if (window.location.hash.length == 0) {
+       		var path = 'https://www.facebook.com/dialog/oauth?';
+       		var queryString = window.location.search.substring(1);
+      		var appID = queryString.split("&")[0].split("=")[1];
+   		var redirect_uri = queryString.split("&")[1].split("=")[1];
+   		var queryParams = ['client_id=' + appID,
+     		'redirect_uri='+redirect_uri,
+     		'response_type=token',
+     		'status=abc'];
+   		var query = queryParams.join('&');
+   		var url = path + query;
+   		window.open(url,"_parent");
+     	} else {
+       		var accessToken = window.location.hash.substring(1).split("&")[0].split("=")[1];
+       		var gwRedirectURI = "http://192.168.2.1:2060/wifidog/auth?token="+accessToken;
+       		window.open(gwRedirectURI,"_self");
+     	}
    </script>
    </body> 
   </html>

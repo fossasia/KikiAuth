@@ -1,14 +1,35 @@
  <html> 
    <head> 
-     <title>Client-side OAuth Example</title> 
+     <title>Client-side OAuth Example</title>
+     <script>
+   	function qsGetParameterByName(name){
+		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+		var regexS = "[\\?&]" + name + "=([^&#]*)";
+		var regex = new RegExp(regexS);
+		var results = regex.exec(window.location.search);
+		if(results == null){
+			return "";
+		}
+		else 
+			return decodeURIComponent(results[1].replace(/\+/g, " "));
+   	}
+   	
+   	function hashGetParameterByName(name){
+   		var params = {}, queryString = location.hash.substring(1),
+   		    regex = /([^&=]+)=([^&]*)/g, m;
+   		    while (m = regex.exec(queryString)) {
+   		    params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+   		}
+   		return params[name];
+   	} 
+     </script>                 
    </head> 
    <body> 
    <script>   
 	if (window.location.hash.length == 0) {
        		var path = 'https://www.facebook.com/dialog/oauth?';
-       		var queryString = window.location.search.substring(1);
-      		var appID = queryString.split("&")[0].split("=")[1];
-   		var redirect_uri = queryString.split("&")[1].split("=")[1];
+      		var appID = qsGetParameterByName("app_id"); 
+   		var redirect_uri = qsGetParameterByName("redirect_uri");
    		var queryParams = ['client_id=' + appID,
      		'redirect_uri='+redirect_uri,
      		'response_type=token',
@@ -17,7 +38,8 @@
    		var url = path + query;
    		window.open(url,"_parent");
      	} else {
-       		var accessToken = window.location.hash.substring(1).split("&")[0].split("=")[1];
+       		var accessToken = hashGetParameterByName("access_token");
+       		//window.location.hash.substring(1).split("&")[0].split("=")[1];
        		var gwRedirectURI = "http://192.168.2.1:2060/wifidog/auth?token="+accessToken;
        		window.open(gwRedirectURI,"_self");
      	}

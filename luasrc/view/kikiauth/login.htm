@@ -11,7 +11,7 @@ function check_service_enabled(sect)
 		elseif name == 'google' then
 			gg_app_id = sect.app_id
 			gg_redirect_uri = sect.redirect_uri
-		end		
+		end
 		table.insert(enabled_services, name)
 	end
 end
@@ -21,16 +21,30 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 <html>
 <head>
 <title>Please choose one service to login</title>
-<script type="text/javascript">
+	<script>
+	function getParameterByName(name){
+		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+		var regexS = "[\\?&]" + name + "=([^&#]*)";
+		var regex = new RegExp(regexS);
+		var results = regex.exec(window.location.search);
+		if(results == null){
+			return "";
+		}
+		else
+			return decodeURIComponent(results[1].replace(/\+/g, " "));
+   	}
+	</script>
+
+	<script type="text/javascript">
 	var width=screen.width/2+50,height=screen.height/2,left=screen.width/4,top=screen.height/4;
-	var gwAddress = "http://192.168.2.1/cgi-bin/luci/kikiauth/";
+	var authServerAddress = "http://"+getParameterByName("gw_address")+"/cgi-bin/luci/kikiauth/";
 	function googleOAuth(){
 		window.open("https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&redirect_uri=<%= gg_redirect_uri %>&response_type=token&client_id=<%= gg_app_id %>","_self");
 //,"left="+left+",width="+width+",height="+height);
 	}
 
 	function facebookOAuth(){
-		window.open(gwAddress+"oauth/facebookcallback?app_id=<%= fb_app_id %>&redirect_uri=<%= fb_redirect_uri %>","_self");
+		window.open(authServerAddress+"oauth/facebookcallback?app_id=<%= fb_app_id %>&redirect_uri=<%= fb_redirect_uri %>","_self");
 //,"left="+left+",width="+width+",height="+height);
 	}
 	</script>

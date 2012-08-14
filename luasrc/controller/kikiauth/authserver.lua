@@ -56,9 +56,9 @@ function action_auth_response_to_gw()
 	end
 	]]--
 
-	if response then
-		luci.http.write("Auth: 1")
-	else
-		luci.http.write("Auth: 6")
-	end
+    if string.find(response,"id",1)~=nil then
+        luci.http.write("Auth: 1")
+    else
+        luci.http.write("Auth: 6")
+    end
 end

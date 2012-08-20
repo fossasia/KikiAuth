@@ -1,16 +1,3 @@
---[[
-LuCI - Lua Configuration Interface
-
-Copyright 2008 Nguyen Khac Duy <nkduy2010@gmail.com>
-Copyright 2008 Nguyen Hong Quan <ng.hong.quan@gmail.com>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-	http://www.apache.org/licenses/LICENSE-2.0
-
-]]--
 module("luci.controller.kikiauth.authserver", package.seeall)
 
 function index()
@@ -32,29 +19,14 @@ function action_redirect_to_success_page()
 end
 
 function action_auth_response_to_gw()
-	local token = luci.http.formvalue("token")
-	local url = "https://graph.facebook.com/me?access_token=%s" % {token}
-	local response
-	local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
-	if wget then
-		response = wget:read("*all")
-		wget:close()
-	end
-
-	--[[
-	local logfile = "/var/log/luciaa.log"
-	if nixio.fs.access(logfile) then
-		local dd = os.date('%Y/%m/%d')
-		local data = "%s: %s \n" % {dd, url}
-		data = data .. "1: " .. l .. "\n"
-		local wget = assert(io.popen("wget --no-check-certificate -O- %s" % {url}))
-	    if wget then
-			data = data .. "2: " .. wget:read("*all")
-			wget:close()
-		end
-		nixio.fs.writefile(logfile, data)
-	end
-	]]--
+    local token = luci.http.formvalue("token")
+    local url = "https://graph.facebook.com/me?access_token=%s" % {token}
+    local response
+    local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
+    if wget then
+        response = wget:read("*all")
+        wget:close()
+    end
 
     if string.find(response,"id",1)~=nil then
         luci.http.write("Auth: 1")

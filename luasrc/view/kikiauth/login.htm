@@ -1,7 +1,6 @@
 <%
 local uci = require "luci.model.uci".cursor()
 local enabled_services = {}
-<<<<<<< HEAD
 local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
 function check_service_enabled(sect)
 	if sect.enabled == '1' then
@@ -13,11 +12,6 @@ function check_service_enabled(sect)
 			gg_app_id = sect.app_id
 			gg_redirect_uri = sect.redirect_uri
 		end
-=======
-function check_service_enabled(sect)
-	local name = sect['.name']
-	if sect.enabled == '1' then
->>>>>>> f311fe6... Show login option upon setting.
 		table.insert(enabled_services, name)
 	end
 end
@@ -27,7 +21,6 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 <html>
 <head>
 <title>Please choose one service to login</title>
-<<<<<<< HEAD
 	<script>
 	function getParameterByName(name){
 		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
@@ -43,9 +36,6 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 	</script>
 
 	<script type="text/javascript">
-=======
-<script type="text/javascript">
->>>>>>> f311fe6... Show login option upon setting.
 	var width=screen.width/2+50,height=screen.height/2,left=screen.width/4,top=screen.height/4;
 	var authServerAddress = "http://"+getParameterByName("gw_address")+"/cgi-bin/luci/kikiauth/";
 	function googleOAuth(){

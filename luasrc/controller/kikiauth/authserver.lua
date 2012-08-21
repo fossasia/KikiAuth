@@ -106,3 +106,25 @@ function extendtable(t1, t2)
 	end
 	return t1
 end
+
+function iptables_open_access()
+
+end
+
+function iptables_kikiauth_chain_exist()
+	return (iptables_kikiauth_chain_exist_in_table('nat')
+	        and iptables_kikiauth_chain_exist_in_table('filter'))
+end
+
+function iptables_kikiauth_chain_exist_in_table(tname)
+	local count = 0
+	for line in luci.util.execi("iptables-save -t %s | grep %s" % {tname, chain}) do
+		line = line:strip()
+		if count == 0 and line:startswith(":%s" % {chain}) then
+			count = count + 1
+		elseif count == 1 and line:endswith("-j %s" % {chain}) then
+			count = count + 1
+		end
+	end      -- If check OK, count == 2 now
+	return (count > 1)
+end

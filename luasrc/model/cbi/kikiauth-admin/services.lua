@@ -25,7 +25,7 @@ p = s:option(Value, "redirect_uri", "Redirect URI",
 p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
 
-p = s:option(DynamicList, "facebook_ip", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
+p = s:option(DynamicList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
 
 s = m:section(NamedSection, "google", "oauth_services", "Google",

@@ -3,7 +3,7 @@ module("luci.controller.kikiauth.authserver", package.seeall)
 -- Name of iptable chain, in which we will open access
 -- to OAuth services (Facebook, Google).
 -- This chain will be in NAT table and FILTER table.
-local chain = "WiFiDog_eth0_OAuthServices"
+local chain = "KikiAuth"
 
 
 -- === String utilities ====

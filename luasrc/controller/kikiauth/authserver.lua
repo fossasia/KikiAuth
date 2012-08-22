@@ -119,7 +119,7 @@ end
 function iptables_kikiauth_chain_exist_in_table(tname)
 	local count = 0
 	for line in luci.util.execi("iptables-save -t %s | grep %s" % {tname, chain}) do
-		line = line:strip()
+		line = luci.util.trim(line)
 		if count == 0 and line:startswith(":%s" % {chain}) then
 			count = count + 1
 		elseif count == 1 and line:endswith("-j %s" % {chain}) then
@@ -127,4 +127,33 @@ function iptables_kikiauth_chain_exist_in_table(tname)
 		end
 	end      -- If check OK, count == 2 now
 	return (count > 1)
+end
+
+function iptables_kikiauth_create_chain()
+	iptables_kikiauth_create_chain_in_table('nat')
+	iptables_kikiauth_create_chain_in_table('filter')
+end
+
+function iptables_kikiauth_create_chain_in_table(tname)
+	local r = 0
+	r = luci.sys.call("iptables -t %s -N %s" % {tname, chain})
+	local rootchain = 'PREROUTING'
+	if tname == 'filter' then rootchain = 'FORWARD' end
+	r = r + luci.sys.call("iptables -t %s -A %s -j %s" % {tname, rootchain, chain})
+	return (not r)
+end
+
+function iptables_kikiauth_delete_chain_from_table(tname)
+	local r = 0
+	r = luci.sys.call("iptables -t %s -F %s" % {tname, chain})
+	local rootchain = 'PREROUTING'
+	if tname == 'filter' then rootchain = 'FORWARD' end
+	r = r + luci.sys.call("iptables -t %s -D %s -j %s" % {tname, rootchain, chain})
+	r = r + luci.sys.call("iptables -t %s -X %s" % {tname, chain})
+	return (not r)
+end
+
+function iptables_kikiauth_delete_chain()
+	iptables_kikiauth_delete_chain_from_table('filter')
+	iptables_kikiauth_delete_chain_from_table('nat')
 end

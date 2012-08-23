@@ -93,18 +93,7 @@ end
 function get_oauth_ip_list(service)
 	local x = luci.model.uci.cursor()
 	local lip = x:get_list('kikiauth', 'facebook', 'ips')
-	local allip = {}
-	-- Convert from hostname (www-slb-10-01-prn1.facebook.com)
-	-- to IP.
-	for n, ip in ipairs(lip) do
-		-- Check if ip is a hostname
-		if not ip:match('^%d+.%d+.%d+.%d+$') then
-			allip = extendtable(allip, hostname_to_ips(ip))
-		else
-			table.insert(allip, ip)
-		end
-	end
-	return allip
+	return to_ip_list(lip)
 end
 
 function hostname_to_ips(host)
@@ -117,6 +106,25 @@ function hostname_to_ips(host)
 		if r.socktype == 'stream' then table.insert(l, r.address) end
 	end
 	return l
+end
+
+function to_ip_list(mixlist)
+	if mixlist == nil then
+		return {}
+	end
+
+	local allip = {}
+	-- Convert from hostname (www-slb-10-01-prn1.facebook.com)
+	-- to IP.
+	for n, ip in ipairs(mixlist) do
+		-- Check if ip is a hostname
+		if not ip:match('^%d+.%d+.%d+.%d+$') then
+			allip = luci.util.combine(allip, hostname_to_ips(ip))
+		else
+			table.insert(allip, ip)
+		end
+	end
+	return allip
 end
 
 function extendtable(t1, t2)

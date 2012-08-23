@@ -1,5 +1,40 @@
 module("luci.controller.kikiauth.authserver", package.seeall)
 
+-- Name of iptable chain, in which we will open access
+-- to OAuth services (Facebook, Google).
+-- This chain will be in NAT table and FILTER table.
+local chain = "WiFiDog_eth0_OAuthServices"
+
+
+-- === String utilities ====
+
+-- Remove leading and trailing whitespaces from string
+function string:strip()
+	local t = self:gsub("^ +", "")
+	t = t:gsub(" +$", "")
+	return t
+end
+
+-- Check if a string starts with given prefix
+function string.startswith(self, prefix)
+	local ret = false
+	if prefix ~= nil then
+		ret = (self:sub(1, string.len(prefix)) == prefix)
+	end
+	return ret
+end
+
+-- Check if a string ends with given suffix
+function string.endswith(self, suffix)
+	local ret = false
+	if suffix ~= nil then
+		local offset = self:len() - suffix:len()
+		ret = (self:sub(offset + 1) == suffix)
+	end
+	return ret
+end
+
+
 function index()
     entry({"kikiauth", "ping"}, call("action_say_pong"), "Click here", 10).dependent=false
     entry({"kikiauth", "auth"}, call("action_auth_response_to_gw"), "", 20).dependent=false

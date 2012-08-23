@@ -238,3 +238,42 @@ function iptables_kikiauth_delete_chain()
 	return (iptables_kikiauth_delete_chain_from_table('filter')
 	        and iptables_kikiauth_delete_chain_from_table('nat'))
 end
+
+function iptables_kikiauth_add_iprule(address, excluded)
+	local l
+	if address:match('^%d+.%d+.%d+.%d+$') then
+		l = {address}
+	else
+		l = hostname_to_ips(address)
+	end
+	for _, ip in ipairs(l) do
+		if not luci.util.contains(excluded, ip) then
+			local c = "iptables -t nat -A %s -d %s -p tcp --dport 443 -j ACCEPT" % {chain, ip}
+			luci.sys.call(c)
+			local c = "iptables -t filter -A %s -d %s -p tcp --dport 443 -j ACCEPT" % {chain, ip}
+			luci.sys.call(c)
+		end
+	end
+end
+
+function iptables_kikiauth_get_ip_list()
+	local l = {}
+	for line in luci.util.execi("iptables-save -t nat | grep 'KikiAuth -d'") do
+		table.insert(l, line:match('%-d (%d+.%d+.%d+.%d+)'))
+	end
+	return l
+end
+
+function iptables_kikiauth_delete_iprule(iplist)
+	for _, ip in ipairs(iplist) do
+		local c = "iptables -t nat -D %s -d %s -p tcp -m tcp --dport 443 -j ACCEPT" % {chain, ip}
+		luci.sys.call(c)
+		c = "iptables -t filter-D %s -d %s -p tcp -m tcp --dport 443 -j ACCEPT" % {chain, ip}
+		luci.sys.call(c)
+	end
+	-- If there is no rule left, delete the chain
+	local existing = iptables_kikiauth_get_ip_list()
+	if existing == {} then
+		iptables_kikiauth_delete_chain()
+	end
+end

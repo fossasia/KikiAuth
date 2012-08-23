@@ -204,14 +204,15 @@ function iptables_kikiauth_chain_exist_in_table(tname)
 			count = count + 1
 		elseif count == 1 and line:endswith("-j %s" % {chain}) then
 			count = count + 1
+			break
 		end
 	end      -- If check OK, count == 2 now
 	return (count > 1)
 end
 
 function iptables_kikiauth_create_chain()
-	iptables_kikiauth_create_chain_in_table('nat')
-	iptables_kikiauth_create_chain_in_table('filter')
+	return (iptables_kikiauth_create_chain_in_table('nat')
+	        and iptables_kikiauth_create_chain_in_table('filter'))
 end
 
 function iptables_kikiauth_create_chain_in_table(tname)
@@ -220,7 +221,7 @@ function iptables_kikiauth_create_chain_in_table(tname)
 	local rootchain = 'PREROUTING'
 	if tname == 'filter' then rootchain = 'FORWARD' end
 	r = r + luci.sys.call("iptables -t %s -A %s -j %s" % {tname, rootchain, chain})
-	return (not r)
+	return (r == 0) -- Convert from zero (success) to true
 end
 
 function iptables_kikiauth_delete_chain_from_table(tname)
@@ -230,10 +231,10 @@ function iptables_kikiauth_delete_chain_from_table(tname)
 	if tname == 'filter' then rootchain = 'FORWARD' end
 	r = r + luci.sys.call("iptables -t %s -D %s -j %s" % {tname, rootchain, chain})
 	r = r + luci.sys.call("iptables -t %s -X %s" % {tname, chain})
-	return (not r)
+	return (r == 0) -- Convert from zero (success) to true
 end
 
 function iptables_kikiauth_delete_chain()
-	iptables_kikiauth_delete_chain_from_table('filter')
-	iptables_kikiauth_delete_chain_from_table('nat')
+	return (iptables_kikiauth_delete_chain_from_table('filter')
+	        and iptables_kikiauth_delete_chain_from_table('nat'))
 end

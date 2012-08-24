@@ -115,11 +115,13 @@ p:value("21", translate("21"))
 p:value("22", translate("22"))
 p:value("23", translate("23"))
 
+--[[
 s = m:section(NamedSection, "twitter", "oauth_services", "Twitter")
 s:option(Flag, "enabled", translate("Enabled?"))
 p = s:option(Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
 p = s:option(Value, "redirect_uri", "Redirect URI")
 p:depends('enabled', '1')
+--]]
 
 return m

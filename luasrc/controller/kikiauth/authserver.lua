@@ -42,30 +42,50 @@ function index()
     entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
     entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
     entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
-    entry({"kikiauth", "check_ip"}, call("check_fb_ip"), "", 70).dependent=false
-    entry({"kikiauth", "check_ip2"}, call("check_fb_ip2"), "", 80).dependent=false
+    entry({"kikiauth","check"}, call("check"), "", 70).dependent=false
 end
 
 function action_say_pong()
     luci.http.prepare_content("text/plain")
     luci.http.write("Pong")
-    -- the following code is for checking the Facebook IPs list.
-    -- It first get out the day and time in the settings, and then,
-    -- if it's time to check it will check.
-    local uci = require "luci.model.uci".cursor()
-    local day, time, search_pattern
-    day = uci:get("kikiauth", "facebook", "day")
-    time= uci:get("kikiauth", "facebook", "time")
-    -- search_pattern is for 'time' checking. In this situation,
-    -- we want to check if the current time and
-    -- the one in the setting is different to each other within the range of 3 minutes.
-    search_pattern = time..":0[012]"
-    local sys = require "luci.sys"
-    --check if the current day and time match the ones in the settings.
-    if string.find(os.date(),day) ~= nil or day == "Every"
-            and string.find(os.date(), search_pattern) ~= nil then
-        check_fb_ip()
+	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
+	check_ip_list(enabled_OAuth_service_list)
+end
+
+-- the following code is for checking the enabled OAuth service IPs list.
+-- It first get out the day and time in the settings, and then,
+-- if it's time to check it will check.
+function check_ip_list(enabled_OAuth_service_list)
+	for i=1,# enabled_OAuth_service_list do
+		local uci = require "luci.model.uci".cursor()
+		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
+		if check_enabled ~= nil then
+			local day, time, search_pattern
+			day = uci:get("kikiauth", enabled_OAuth_service_list[i], "day")
+			time= uci:get("kikiauth", enabled_OAuth_service_list[i], "time")
+			-- search_pattern is for 'time' checking. In this situation,
+			-- we want to check if the current time and
+			-- the one in the setting is different to each other within the range of 3 minutes.
+			search_pattern = time..":0[012]"
+			--check if the current day and time match the ones in the settings.
+			if string.find(os.date(),day) ~= nil or day == "Every" and string.find(os.date(), search_pattern) ~= nil then
+				 check_ips(enabled_OAuth_service_list[i])
+			end
+		end
     end
+end
+
+function get_enabled_OAuth_service_list()
+	local uci = require "luci.model.uci".cursor()
+	local enabled_OAuth_service_list = {}
+	local function check_service_enabled(sect)
+		if sect.enabled == '1' then
+			local name = sect['.name']
+			table.insert(enabled_OAuth_service_list, name)
+		end
+	end
+	uci:foreach("kikiauth", "oauth_services", check_service_enabled)
+	return enabled_OAuth_service_list
 end
 
 function action_redirect_to_success_page()
@@ -163,10 +183,12 @@ function check_fb_ip2()
     end
 end
 
-function check_fb_ip()
+--check a particular service IPs list
+--@param service: "facebook" or "google" ...
+function check_ips(service)
     local uci = require "luci.model.uci".cursor()
     local ips = {}
-    ips = uci:get_list("kikiauth","facebook","ips")
+    ips = uci:get_list("kikiauth",service,"ips")
     local sys = require "luci.sys"
     for i=1,# ips do
         -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
@@ -179,12 +201,12 @@ function check_fb_ip()
 	if string.find(output,"64") == nil then
 	    table.remove(ips, i)
 	    -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
-            -- that we want to loop in the next route because after removing an element,
-            -- the next element will fill the removed position.
+        -- that we want to loop in the next route because after removing an element,
+        -- the next element will fill the removed position.
 	    i = i - 1
 	end
     end
-    uci:set_list("kikiauth","facebook","ips",ips)
+    uci:set_list("kikiauth",service,"ips",ips)
     uci:save("kikiauth")
     uci:commit("kikiauth")
 end
@@ -201,3 +223,15 @@ function iptables_kikiauth_chain_exist_in_table(tname)
 	end      -- If check OK, count == 2 now
 	return (count > 1)
 end
+
+function find_new_IP(service)
+
+end
+
+function check()
+    local uci = luci.model.uci.cursor()
+    local enabled = uci:get("kikiauth","facebook","enabled")
+    local check_enabled = uci:get("kikiauth","facebook","check_enabled")
+    print(enabled, check_enabled)
+end
+

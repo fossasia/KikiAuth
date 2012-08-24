@@ -13,6 +13,25 @@ You may obtain a copy of the License at
 $Id$
 ]]--
 authserver = require "luci.controller.kikiauth.authserver"
+local class      = luci.util.class
+
+IPList = class(DynamicList)
+function IPList.write(self, section, value)
+	if authserver.iptables_kikiauth_chain_exist() then
+		local added = authserver.iptables_kikiauth_get_ip_list()
+		for _, address in ipairs(value) do
+			authserver.iptables_kikiauth_add_iprule(address, added)
+		end
+	end
+	DynamicList.write(self, section, value)
+end
+function IPList.remove(self, section)
+	-- Get only old IPs of this section. Don't touch other's.
+	old_own_ips = self.map:get(section, self.option)
+	old_own_ips = authserver.to_ip_list(old_own_ips)
+	authserver.iptables_kikiauth_delete_iprule(old_own_ips)
+	DynamicList.remove(self, section)
+end
 
 m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to work with WifiDog. KikiAuth support logging in with popular OAuth services account.")) -- We want to edit the uci config file /etc/config/kikiauth
 
@@ -48,8 +67,10 @@ p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
 
 ---***---
-p = s:option(DynamicList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
+p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
+
+---***---
 p = s:option(Flag, "check_enabled", translate("Periodically check the Facebook IPs list?"))
 p:depends('enabled', '1')
 p = s:option(ListValue, "day", translate("Day"))
@@ -88,30 +109,6 @@ p:value("20", translate("20"))
 p:value("21", translate("21"))
 p:value("22", translate("22"))
 p:value("23", translate("23"))
-
-function p.write(self, section, value)
-	if authserver.iptables_kikiauth_chain_exist() then
-		local added = authserver.iptables_kikiauth_get_ip_list()
-		for _, address in ipairs(value) do
-			authserver.iptables_kikiauth_add_iprule(address, added)
-		end
-	end
-	DynamicList.write(self, section, value)
-end
-
-function p.remove(self, section)
-	-- Get only old IPs of this section. Don't touch other's.
-	old_own_ips = self.map:get(section, self.option)
-	--[[
-	local l = ""
-	for k, v in pairs(old_own_ips) do
-		l = l .. k .. tostring(v)
-	end
-	luci.sys.call("echo 'Old IP %s' >> /tmp/log_kikiauth.txt" % {l})
-	--]]
-	old_own_ips = authserver.to_ip_list(old_own_ips)
-	DynamicList.remove(self, section)
-end
 
 ---***---
 s = m:section(NamedSection, "google", "oauth_services", "Google",

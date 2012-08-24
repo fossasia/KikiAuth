@@ -92,7 +92,7 @@ end
 -- @param service "facebook" or "google"
 function get_oauth_ip_list(service)
 	local x = luci.model.uci.cursor()
-	local lip = x:get_list('kikiauth', 'facebook', 'ips')
+	local lip = x:get_list('kikiauth', service, 'ips')
 	return to_ip_list(lip)
 end
 

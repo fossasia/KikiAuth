@@ -13,7 +13,33 @@ You may obtain a copy of the License at
 $Id$
 ]]--
 authserver = require "luci.controller.kikiauth.authserver"
-local class      = luci.util.class
+local class = luci.util.class
+
+SerFlag = class(Flag)
+function SerFlag.write(self, section, value)
+	if value == '1' then
+		if not authserver.iptables_kikiauth_chain_exist() then
+			luci.sys.call("echo 'write %s %s' >> /tmp/log_kikiauth.txt" % {section, value})
+			authserver.iptables_kikiauth_create_chain()
+		end
+	end
+	Flag.write(self, section, value)
+end
+
+function SerFlag.remove(self, section)
+	--[[
+	local dd = os.date('%H:%M:%S')
+	local l = "%s remove %s" % {dd, section}
+	luci.sys.call("echo '%s' >> /tmp/log_kikiauth.txt" % {l})
+	--]]
+
+	-- Delete iptables rules for IPs belonging to this service.
+	local old_own_ips = self.map:get(section, "ips")
+	old_own_ips = authserver.to_ip_list(old_own_ips)
+	authserver.iptables_kikiauth_delete_iprule(old_own_ips)
+	Flag.remove(self, section)
+end
+
 
 IPList = class(DynamicList)
 function IPList.write(self, section, value)
@@ -37,31 +63,8 @@ m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to 
 
 s = m:section(NamedSection, "facebook", "oauth_services", "Facebook",
               translate("You can register your own Facebook app and use its parameters here."))
-e = s:option(Flag, "enabled", translate("Enabled?"))
 
-function e.write(self, section, value)
-	if value == '1' then
-		if not authserver.iptables_kikiauth_chain_exist() then
-			authserver.iptables_kikiauth_create_chain()
-		end
-	end
-	Flag.write(self, section, value)
-end
-
-function e.remove(self, section)
-	--[[
-	local dd = os.date('%H:%M:%S')
-	local l = "%s remove %s" % {dd, section}
-	luci.sys.call("echo '%s' >> /tmp/log_kikiauth.txt" % {l})
-	--]]
-
-	-- Delete iptables rules for IPs belonging to this service.
-	local old_own_ips = self.map:get(section, "ips")
-	old_own_ips = authserver.to_ip_list(old_own_ips)
-	authserver.iptables_kikiauth_delete_iprule(old_own_ips)
-	Flag.remove(self, section)
-end
-
+e = s:option(SerFlag, "enabled", translate("Enabled?"))
 
 ---***---
 p = s:option(Value, "app_id", "App ID/ Client ID")
@@ -119,7 +122,7 @@ p:value("23", translate("23"))
 ---***---
 s = m:section(NamedSection, "google", "oauth_services", "Google",
               translate("You can register your own Google app and use its parameters here."))
-s:option(Flag, "enabled", translate("Enabled?"))
+s:option(SerFlag, "enabled", translate("Enabled?"))
 p = s:option(Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
 p.default = '396818136722.apps.googleusercontent.com'

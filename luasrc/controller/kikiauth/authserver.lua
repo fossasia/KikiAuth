@@ -8,13 +8,6 @@ local chain = "KikiAuth"
 
 -- === String utilities ====
 
--- Remove leading and trailing whitespaces from string
-function string:strip()
-	local t = self:gsub("^ +", "")
-	t = t:gsub(" +$", "")
-	return t
-end
-
 -- Check if a string starts with given prefix
 function string.startswith(self, prefix)
 	local ret = false
@@ -145,17 +138,6 @@ function to_ip_list(mixlist)
 		end
 	end
 	return allip
-end
-
-function extendtable(t1, t2)
-	for i, v in pairs(t2) do
-		table.insert(t1, v)
-	end
-	return t1
-end
-
-function iptables_open_access()
-
 end
 
 function iptables_kikiauth_chain_exist()

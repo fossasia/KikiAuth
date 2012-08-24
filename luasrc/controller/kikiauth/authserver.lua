@@ -34,20 +34,24 @@ function index()
     entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
     entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
     entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
-    entry({"kikiauth","check"}, call("check"), "", 70).dependent=false
 end
 
 function action_say_pong()
     luci.http.prepare_content("text/plain")
     luci.http.write("Pong")
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
-	check_ip_list(enabled_OAuth_service_list)
+	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
+	--find new ip
+	for i=1,# enabled_OAuth_service_list do
+		find_and_add_new_IP(enabled_OAuth_service_list[i])
+	end
+
 end
 
 -- the following code is for checking the enabled OAuth service IPs list.
 -- It first get out the day and time in the settings, and then,
 -- if it's time to check it will check.
-function check_ip_list(enabled_OAuth_service_list)
+function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 	for i=1,# enabled_OAuth_service_list do
 		local uci = require "luci.model.uci".cursor()
 		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
@@ -282,13 +286,20 @@ function iptables_kikiauth_delete_iprule(iplist)
 	end
 end
 
-function find_new_IP(service)
-
-end
-
-function check()
-    local uci = luci.model.uci.cursor()
-    local enabled = uci:get("kikiauth","facebook","enabled")
-    local check_enabled = uci:get("kikiauth","facebook","check_enabled")
-    print(enabled, check_enabled)
+function find_and_add_new_IP(service)
+	if service == "facebook" then
+		local sys = require "luci.sys"
+		local ips = get_oauth_ip_list(service)
+		local output = sys.exec("ping -c 1 www.facebook.com | grep '64 bytes' | awk '{print $4}'")
+		local ping_ip = output:sub(1, output:len()-2)
+		for i=1,# ips do
+			if string.find(ips[i],ping_ip) == nil then
+				table.insert(ips, ping_ip)
+			end
+		end
+		local uci = luci.model.uci.cursor()
+		uci:set_list("kikiauth", service, "ips", ips)
+		uci:save("kikiauth")
+		uci:commit("kikiauth")
+    end
 end

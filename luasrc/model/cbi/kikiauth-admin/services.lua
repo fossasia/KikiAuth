@@ -27,7 +27,7 @@ function IPList.write(self, section, value)
 end
 function IPList.remove(self, section)
 	-- Get only old IPs of this section. Don't touch other's.
-	old_own_ips = self.map:get(section, self.option)
+	local old_own_ips = self.map:get(section, self.option)
 	old_own_ips = authserver.to_ip_list(old_own_ips)
 	authserver.iptables_kikiauth_delete_iprule(old_own_ips)
 	DynamicList.remove(self, section)
@@ -49,10 +49,16 @@ function e.write(self, section, value)
 end
 
 function e.remove(self, section)
-	local dd = os.date('%H %M %S')
+	--[[
+	local dd = os.date('%H:%M:%S')
 	local l = "%s remove %s" % {dd, section}
 	luci.sys.call("echo '%s' >> /tmp/log_kikiauth.txt" % {l})
-	authserver.iptables_kikiauth_delete_chain()
+	--]]
+
+	-- Delete iptables rules for IPs belonging to this service.
+	local old_own_ips = self.map:get(section, "ips")
+	old_own_ips = authserver.to_ip_list(old_own_ips)
+	authserver.iptables_kikiauth_delete_iprule(old_own_ips)
 	Flag.remove(self, section)
 end
 

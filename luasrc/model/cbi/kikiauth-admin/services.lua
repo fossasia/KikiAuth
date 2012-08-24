@@ -126,7 +126,7 @@ p.default = '396818136722.apps.googleusercontent.com'
 p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app."))
 p:depends('enabled', '1')
-p = s:option(DynamicList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
+p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')
 p = s:option(Flag, "check_enabled", translate("Periodically check the Google IPs list?"))
 p:depends('enabled', '1')

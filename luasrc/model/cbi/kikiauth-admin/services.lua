@@ -74,7 +74,10 @@ p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Facebook app."))
 p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
-
+p = s:option(Value, "success_page", "Success page after successfully logining",
+                translate("If not specified, the user will be driven to the URL that he typed before - when trying to access the internet."))
+p.default = 'http://mbm.vn'
+p:depends('enabled', '1')
 ---***---
 p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
@@ -128,6 +131,10 @@ p:depends('enabled', '1')
 p.default = '396818136722.apps.googleusercontent.com'
 p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app."))
+p:depends('enabled', '1')
+p = s:option(Value, "success_page", "Success page after successfully logining",
+                translate("If not specified, the user will be driven to the URL that he typed before - when trying to access the internet."))
+p.default = 'http://mbm.vn'
 p:depends('enabled', '1')
 p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')

@@ -254,6 +254,8 @@ function iptables_kikiauth_add_iprule(address, excluded)
 	else
 		l = hostname_to_ips(address)
 	end
+	-- Chain nil variable to {} to avoid exception at luci.util.contains
+	if excluded == nil then excluded = {} end
 	for _, ip in ipairs(l) do
 		if not luci.util.contains(excluded, ip) then
 			local c = "iptables -t nat -A %s -d %s -p tcp --dport 443 -j ACCEPT" % {chain, ip}
@@ -266,7 +268,7 @@ end
 
 function iptables_kikiauth_get_ip_list()
 	local l = {}
-	for line in luci.util.execi("iptables-save -t nat | grep 'KikiAuth -d'") do
+	for line in luci.util.execi("iptables-save -t nat | grep '%s -d'" % {chain}) do
 		table.insert(l, line:match('%-d (%d+.%d+.%d+.%d+)'))
 	end
 	return l

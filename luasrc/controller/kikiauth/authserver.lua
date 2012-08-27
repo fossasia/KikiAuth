@@ -290,12 +290,10 @@ function find_and_add_new_IP(service)
 	if service == "facebook" then
 		local sys = require "luci.sys"
 		local ips = get_oauth_ip_list(service)
-		local output = sys.exec("ping -c 1 www.facebook.com | grep '64 bytes' | awk '{print $4}'")
-		local ping_ip = output:sub(1, output:len()-2)
-		for i = 1, #ips do
-			if string.find(ips[i], ping_ip) == nil then
-				table.insert(ips, ping_ip)
-			end
+		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
+		local ping_ip = luci.util.trim(output):sub(1, -2)
+		if not luci.util.contains(ips, ping_ip) then
+			table.insert(ips, ping_ip)
 		end
 		local uci = luci.model.uci.cursor()
 		uci:set_list("kikiauth", service, "ips", ips)

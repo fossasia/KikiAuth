@@ -30,6 +30,7 @@ end
 function o.write(self, section)
 	if self.inputstyle == 'apply' then
 		-- Create iptables chain
+		authserver.iptables_kikiauth_delete_chain()
 		local r = authserver.iptables_kikiauth_create_chain()
 		-- Get IPs to add to iptables chain
 		local services = authserver.get_enabled_OAuth_service_list()

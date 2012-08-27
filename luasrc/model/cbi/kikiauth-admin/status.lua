@@ -44,6 +44,8 @@ function o.write(self, section)
 		for _, ip in ipairs(ips) do
 			authserver.iptables_kikiauth_add_iprule(ip)
 		end
+		-- Insert KikiAuth rule to WifiDog chain
+		authserver.iptables_kikiauth_insert_to_wifidog()
 		if r then self:set_state('remove') end
 	else
 		if authserver.iptables_kikiauth_delete_chain() then self:set_state('apply') end

@@ -232,6 +232,52 @@ function iptables_kikiauth_create_chain_in_table(tname)
 	return (r == 0) -- Convert from zero (success) to true
 end
 
+-- Move the KikiAuth chain to suitable position between WifiDog chains
+function iptables_kikiauth_insert_to_wifidog()
+	-- Get the name of WifiDog's WiFi2Internet chain.
+	-- WiFiDog_eth0_WIFI2Internet or similar
+	local c = "iptables -t filter -S FORWARD | egrep -io 'WiFiDog_[a-z0-9]+_WIFI2Internet'"
+	local wd_internet_chname = luci.util.trim(luci.util.exec(c))
+	if wd_internet_chname == '' then
+		return
+	end
+	-- Get the name of WiFiDog's AuthServers.
+	-- WiFiDog_eth0_AuthServers or similar
+	c = "iptables -t filter -S %s | egrep -io 'WiFiDog_[a-z0-9]+_AuthServers'" % {wd_internet_chname}
+	local wd_authserver_chname = luci.util.trim(luci.util.exec(c))
+	if wd_authserver_chname == '' then
+		return
+	end
+	-- Determine the position of AuthServer rule in WiFi2Internet chain
+	c = "iptables -t filter -S %s | grep -i '\\-A '" % {wd_internet_chname}
+	local pos = 0
+	for line in luci.util.execi(c) do
+		pos = pos + 1
+		if line:find(wd_authserver_chname) then break end
+	end
+	-- Insert KikiAuth rule right after
+	c = "iptables -t filter -I %s %d -j %s" % {wd_internet_chname, pos+1, chain}
+	luci.sys.call(c)
+	-- Remove KikiAuth rule from FORWARD chain
+	c = "iptables -t filter -D FORWARD -j %s" % {chain}
+	luci.sys.call(c)
+end
+
+function iptables_kikiauth_remove_from_wifidog()
+	local r = 0
+	-- Get the name of WifiDog's WiFi2Internet chain.
+	-- WiFiDog_eth0_WIFI2Internet or similar
+	local c = "iptables -t filter -S FORWARD | egrep -io 'WiFiDog_[a-z0-9]+_WIFI2Internet'"
+	local wd_internet_chname = luci.util.trim(luci.util.exec(c))
+	if wd_internet_chname == '' then
+		return
+	end
+	-- Delete KikiAuth rule from Wifidog
+	c = "iptables -t filter -D %s -j %s" % {wd_internet_chname, chain}
+	r = luci.sys.call(c)
+	return (r == 0)
+end
+
 function iptables_kikiauth_delete_chain_from_table(tname)
 	local r = 0
 	luci.sys.call("iptables -t %s -F %s" % {tname, chain})
@@ -246,6 +292,7 @@ function iptables_kikiauth_delete_chain_from_table(tname)
 end
 
 function iptables_kikiauth_delete_chain()
+	iptables_kikiauth_remove_from_wifidog()
 	return (iptables_kikiauth_delete_chain_from_table('filter')
 	        and iptables_kikiauth_delete_chain_from_table('nat'))
 end

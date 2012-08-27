@@ -42,7 +42,7 @@ function action_say_pong()
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
 	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 	--find new ip
-	for i=1,# enabled_OAuth_service_list do
+	for i=1, #enabled_OAuth_service_list do
 		find_and_add_new_IP(enabled_OAuth_service_list[i])
 	end
 
@@ -52,7 +52,7 @@ end
 -- It first get out the day and time in the settings, and then,
 -- if it's time to check it will check.
 function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
-	for i=1,# enabled_OAuth_service_list do
+	for i = 1, #enabled_OAuth_service_list do
 		local uci = require "luci.model.uci".cursor()
 		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
 		if check_enabled ~= nil then
@@ -62,7 +62,7 @@ function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 			-- search_pattern is for 'time' checking. In this situation,
 			-- we want to check if the current time and
 			-- the one in the setting is different to each other within the range of 3 minutes.
-			search_pattern = time..":0[012]"
+			search_pattern = time .. ":0[012]"
 			--check if the current day and time match the ones in the settings.
 			if string.find(os.date(),day) ~= nil or day == "Every" and string.find(os.date(), search_pattern) ~= nil then
 				 check_ips(enabled_OAuth_service_list[i])
@@ -98,7 +98,7 @@ function action_auth_response_to_gw()
         wget:close()
     end
 
-    if string.find(response,"id",1)~=nil then
+    if string.find(response, "id", 1) ~= nil then
         luci.http.write("Auth: 1")
     else
         luci.http.write("Auth: 6")
@@ -153,8 +153,8 @@ function check_fb_ip2()
     local httpc = require "luci.httpclient"
     local uci = require "luci.model.uci".cursor()
     local ips = {}
-    ips = uci:get_list("kikiauth","facebook","ips")
-    for i=1,# ips do
+    ips = uci:get_list("kikiauth", "facebook", "ips")
+    for i = 1, #ips do
         -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
         -- (because when one element is removed,
         -- the length of the ips table is correspondingly subtracted by 1).
@@ -164,7 +164,7 @@ function check_fb_ip2()
         local res, code, msg = httpc.request_to_buffer("http://"..ips[i])
         print(code, msg)
         if code == -2 then
-            table.remove(ips,i)
+            table.remove(ips, i)
             -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' table
             -- that we want to loop in the next route because after removing an element,
             -- the next element will fill the removed position.
@@ -181,9 +181,9 @@ end
 function check_ips(service)
     local uci = require "luci.model.uci".cursor()
     local ips = {}
-    ips = uci:get_list("kikiauth",service,"ips")
+    ips = uci:get_list("kikiauth", service, "ips")
     local sys = require "luci.sys"
-    for i=1,# ips do
+    for i = 1, #ips do
         -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
         -- (because when one element is removed,
         -- the length of the ips table is correspondingly subtracted by 1).
@@ -191,7 +191,7 @@ function check_ips(service)
       	    break
       	end
 	local output = sys.exec("ping -c 2 "..ips[i].." | grep '64 bytes' | awk '{print $1}'")
-	if string.find(output,"64") == nil then
+	if string.find(output, "64") == nil then
 	    table.remove(ips, i)
 	    -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
         -- that we want to loop in the next route because after removing an element,
@@ -199,7 +199,7 @@ function check_ips(service)
 	    i = i - 1
 	end
     end
-    uci:set_list("kikiauth",service,"ips",ips)
+    uci:set_list("kikiauth", service, "ips", ips)
     uci:save("kikiauth")
     uci:commit("kikiauth")
 end
@@ -292,8 +292,8 @@ function find_and_add_new_IP(service)
 		local ips = get_oauth_ip_list(service)
 		local output = sys.exec("ping -c 1 www.facebook.com | grep '64 bytes' | awk '{print $4}'")
 		local ping_ip = output:sub(1, output:len()-2)
-		for i=1,# ips do
-			if string.find(ips[i],ping_ip) == nil then
+		for i = 1, #ips do
+			if string.find(ips[i], ping_ip) == nil then
 				table.insert(ips, ping_ip)
 			end
 		end

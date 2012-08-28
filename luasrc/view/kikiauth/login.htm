@@ -1,7 +1,10 @@
 <%
 local uci = require "luci.model.uci".cursor()
+local sauth = require "luci.sauth"
 local enabled_services = {}
 local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
+local url = luci.http.formvalue("url")
+sauth.write("1",url)
 function check_service_enabled(sect)
 	if sect.enabled == '1' then
 		local name = sect['.name']

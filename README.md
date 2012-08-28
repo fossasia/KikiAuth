@@ -11,3 +11,10 @@ Copy KikiAuth folder to luci-0.10/applications.
 Run
     make runhttpd
 to compile.
+
+Build ipk package
+-----
+Copy the folder to openwrt/package (source tree)
+Rename Makefile_build_standalone to Makefile (replace the old Makefile)
+Choose the luci-app-kikiauth in"make menuconfig".
+Run "make package/luci-app-kikiauth/compile V=99" to build.

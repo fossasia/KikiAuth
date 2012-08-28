@@ -21,6 +21,6 @@ function index()
 	end
 
 	entry({"admin", "network", "kikiauth"}, alias("admin", "network", "kikiauth", "services"), _("KikiAuth")).i18n = "kikiauth"
+	entry({"admin", "network", "kikiauth", "status"}, cbi("kikiauth-admin/status"), _("Status"))
 	entry({"admin", "network", "kikiauth", "services"}, cbi("kikiauth-admin/services"), _("Services"))
-	entry({"admin", "network", "kikiauth", "clients"}, cbi("kikiauth-admin/clients"), _("Clients"))
 end

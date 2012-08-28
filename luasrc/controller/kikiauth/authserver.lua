@@ -3,17 +3,10 @@ module("luci.controller.kikiauth.authserver", package.seeall)
 -- Name of iptable chain, in which we will open access
 -- to OAuth services (Facebook, Google).
 -- This chain will be in NAT table and FILTER table.
-local chain = "WiFiDog_eth0_OAuthServices"
+local chain = "KikiAuth"
 
 
 -- === String utilities ====
-
--- Remove leading and trailing whitespaces from string
-function string:strip()
-	local t = self:gsub("^ +", "")
-	t = t:gsub(" +$", "")
-	return t
-end
 
 -- Check if a string starts with given prefix
 function string.startswith(self, prefix)
@@ -34,7 +27,6 @@ function string.endswith(self, suffix)
 	return ret
 end
 
-
 function index()
     entry({"kikiauth", "ping"}, call("action_say_pong"), "Click here", 10).dependent=false
     entry({"kikiauth", "auth"}, call("action_auth_response_to_gw"), "", 20).dependent=false
@@ -50,7 +42,7 @@ function action_say_pong()
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
 	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 	--find new ip
-	for i=1,# enabled_OAuth_service_list do
+	for i=1, #enabled_OAuth_service_list do
 		find_and_add_new_IP(enabled_OAuth_service_list[i])
 	end
 
@@ -60,7 +52,7 @@ end
 -- It first get out the day and time in the settings, and then,
 -- if it's time to check it will check.
 function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
-	for i=1,# enabled_OAuth_service_list do
+	for i = 1, #enabled_OAuth_service_list do
 		local uci = require "luci.model.uci".cursor()
 		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
 		if check_enabled ~= nil then
@@ -70,7 +62,7 @@ function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 			-- search_pattern is for 'time' checking. In this situation,
 			-- we want to check if the current time and
 			-- the one in the setting is different to each other within the range of 3 minutes.
-			search_pattern = time..":0[012]"
+			search_pattern = time .. ":0[012]"
 			--check if the current day and time match the ones in the settings.
 			if string.find(os.date(),day) ~= nil or day == "Every" and string.find(os.date(), search_pattern) ~= nil then
 				 check_ips(enabled_OAuth_service_list[i])
@@ -93,7 +85,9 @@ function get_enabled_OAuth_service_list()
 end
 
 function action_redirect_to_success_page()
-    luci.http.redirect("http://mbm.vn")
+    local uci = require "luci.model.uci".cursor()
+    local success_url = uci:get("kikiauth","oauth_success_page","success_url")
+    luci.http.redirect(success_url)
 end
 
 function action_auth_response_to_gw()
@@ -106,7 +100,7 @@ function action_auth_response_to_gw()
         wget:close()
     end
 
-    if string.find(response,"id",1)~=nil then
+    if string.find(response, "id", 1) ~= nil then
         luci.http.write("Auth: 1")
     else
         luci.http.write("Auth: 6")
@@ -118,18 +112,7 @@ end
 function get_oauth_ip_list(service)
 	local x = luci.model.uci.cursor()
 	local lip = x:get_list('kikiauth', service, 'ips')
-	local allip = {}
-	-- Convert from hostname (www-slb-10-01-prn1.facebook.com)
-	-- to IP.
-	for n, ip in ipairs(lip) do
-		-- Check if ip is a hostname
-		if not ip:match('^%d+.%d+.%d+.%d+$') then
-			allip = extendtable(allip, hostname_to_ips(ip))
-		else
-			table.insert(allip, ip)
-		end
-	end
-	return allip
+	return to_ip_list(lip)
 end
 
 function hostname_to_ips(host)
@@ -144,15 +127,23 @@ function hostname_to_ips(host)
 	return l
 end
 
-function extendtable(t1, t2)
-	for i, v in pairs(t2) do
-		table.insert(t1, v)
+function to_ip_list(mixlist)
+	if mixlist == nil then
+		return {}
 	end
-	return t1
-end
 
-function iptables_open_access()
-
+	local allip = {}
+	-- Convert from hostname (www-slb-10-01-prn1.facebook.com)
+	-- to IP.
+	for n, ip in ipairs(mixlist) do
+		-- Check if ip is a hostname
+		if not ip:match('^%d+.%d+.%d+.%d+$') then
+			allip = luci.util.combine(allip, hostname_to_ips(ip))
+		else
+			table.insert(allip, ip)
+		end
+	end
+	return allip
 end
 
 function iptables_kikiauth_chain_exist()
@@ -164,8 +155,8 @@ function check_fb_ip2()
     local httpc = require "luci.httpclient"
     local uci = require "luci.model.uci".cursor()
     local ips = {}
-    ips = uci:get_list("kikiauth","facebook","ips")
-    for i=1,# ips do
+    ips = uci:get_list("kikiauth", "facebook", "ips")
+    for i = 1, #ips do
         -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
         -- (because when one element is removed,
         -- the length of the ips table is correspondingly subtracted by 1).
@@ -175,7 +166,7 @@ function check_fb_ip2()
         local res, code, msg = httpc.request_to_buffer("http://"..ips[i])
         print(code, msg)
         if code == -2 then
-            table.remove(ips,i)
+            table.remove(ips, i)
             -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' table
             -- that we want to loop in the next route because after removing an element,
             -- the next element will fill the removed position.
@@ -192,9 +183,9 @@ end
 function check_ips(service)
     local uci = require "luci.model.uci".cursor()
     local ips = {}
-    ips = uci:get_list("kikiauth",service,"ips")
+    ips = uci:get_list("kikiauth", service, "ips")
     local sys = require "luci.sys"
-    for i=1,# ips do
+    for i = 1, #ips do
         -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
         -- (because when one element is removed,
         -- the length of the ips table is correspondingly subtracted by 1).
@@ -202,7 +193,7 @@ function check_ips(service)
       	    break
       	end
 	local output = sys.exec("ping -c 2 "..ips[i].." | grep '64 bytes' | awk '{print $1}'")
-	if string.find(output,"64") == nil then
+	if string.find(output, "64") == nil then
 	    table.remove(ips, i)
 	    -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
         -- that we want to loop in the next route because after removing an element,
@@ -210,7 +201,7 @@ function check_ips(service)
 	    i = i - 1
 	end
     end
-    uci:set_list("kikiauth",service,"ips",ips)
+    uci:set_list("kikiauth", service, "ips", ips)
     uci:save("kikiauth")
     uci:commit("kikiauth")
 end
@@ -218,26 +209,145 @@ end
 function iptables_kikiauth_chain_exist_in_table(tname)
 	local count = 0
 	for line in luci.util.execi("iptables-save -t %s | grep %s" % {tname, chain}) do
-		line = line:strip()
+		line = luci.util.trim(line)
 		if count == 0 and line:startswith(":%s" % {chain}) then
 			count = count + 1
 		elseif count == 1 and line:endswith("-j %s" % {chain}) then
 			count = count + 1
+			break
 		end
 	end      -- If check OK, count == 2 now
 	return (count > 1)
+end
+
+function iptables_kikiauth_create_chain()
+	return (iptables_kikiauth_create_chain_in_table('nat')
+	        and iptables_kikiauth_create_chain_in_table('filter'))
+end
+
+function iptables_kikiauth_create_chain_in_table(tname)
+	local r = 0
+	luci.sys.call("iptables -t %s -N %s" % {tname, chain})
+	local rootchain = 'PREROUTING'
+	if tname == 'filter' then rootchain = 'FORWARD' end
+	r = r + luci.sys.call("iptables -t %s -A %s -j %s" % {tname, rootchain, chain})
+	return (r == 0) -- Convert from zero (success) to true
+end
+
+-- Move the KikiAuth chain to suitable position between WifiDog chains
+function iptables_kikiauth_insert_to_wifidog()
+	-- Get the name of WifiDog's WiFi2Internet chain.
+	-- WiFiDog_eth0_WIFI2Internet or similar
+	local c = "iptables -t filter -S FORWARD | egrep -io 'WiFiDog_[a-z0-9]+_WIFI2Internet'"
+	local wd_internet_chname = luci.util.trim(luci.util.exec(c))
+	if wd_internet_chname == '' then
+		return
+	end
+	-- Get the name of WiFiDog's AuthServers.
+	-- WiFiDog_eth0_AuthServers or similar
+	c = "iptables -t filter -S %s | egrep -io 'WiFiDog_[a-z0-9]+_AuthServers'" % {wd_internet_chname}
+	local wd_authserver_chname = luci.util.trim(luci.util.exec(c))
+	if wd_authserver_chname == '' then
+		return
+	end
+	-- Determine the position of AuthServer rule in WiFi2Internet chain
+	c = "iptables -t filter -S %s | grep -i '\\-A '" % {wd_internet_chname}
+	local pos = 0
+	for line in luci.util.execi(c) do
+		pos = pos + 1
+		if line:find(wd_authserver_chname) then break end
+	end
+	-- Insert KikiAuth rule right after
+	c = "iptables -t filter -I %s %d -j %s" % {wd_internet_chname, pos+1, chain}
+	luci.sys.call(c)
+	-- Remove KikiAuth rule from FORWARD chain
+	c = "iptables -t filter -D FORWARD -j %s" % {chain}
+	luci.sys.call(c)
+end
+
+function iptables_kikiauth_remove_from_wifidog()
+	local r = 0
+	-- Get the name of WifiDog's WiFi2Internet chain.
+	-- WiFiDog_eth0_WIFI2Internet or similar
+	local c = "iptables -t filter -S FORWARD | egrep -io 'WiFiDog_[a-z0-9]+_WIFI2Internet'"
+	local wd_internet_chname = luci.util.trim(luci.util.exec(c))
+	if wd_internet_chname == '' then
+		return
+	end
+	-- Delete KikiAuth rule from Wifidog
+	c = "iptables -t filter -D %s -j %s" % {wd_internet_chname, chain}
+	r = luci.sys.call(c)
+	return (r == 0)
+end
+
+function iptables_kikiauth_delete_chain_from_table(tname)
+	local r = 0
+	luci.sys.call("iptables -t %s -F %s" % {tname, chain})
+	local rootchain = 'PREROUTING'
+	if tname == 'filter' then rootchain = 'FORWARD' end
+	while r == 0 do
+		r = luci.sys.call("iptables -t %s -D %s -j %s" % {tname, rootchain, chain})
+	end
+	luci.sys.call("iptables -t %s -X %s" % {tname, chain})
+	luci.sys.call(c)
+	return (not iptables_kikiauth_chain_exist())
+end
+
+function iptables_kikiauth_delete_chain()
+	iptables_kikiauth_remove_from_wifidog()
+	return (iptables_kikiauth_delete_chain_from_table('filter')
+	        and iptables_kikiauth_delete_chain_from_table('nat'))
+end
+
+function iptables_kikiauth_add_iprule(address, excluded)
+	local l
+	if address:match('^%d+.%d+.%d+.%d+$') then
+		l = {address}
+	else
+		l = hostname_to_ips(address)
+	end
+	-- Chain nil variable to {} to avoid exception at luci.util.contains
+	if excluded == nil then excluded = {} end
+	for _, ip in ipairs(l) do
+		if not luci.util.contains(excluded, ip) then
+			local c = "iptables -t nat -A %s -d %s -p tcp --dport 443 -j ACCEPT" % {chain, ip}
+			luci.sys.call(c)
+			local c = "iptables -t filter -A %s -d %s -p tcp --dport 443 -j ACCEPT" % {chain, ip}
+			luci.sys.call(c)
+		end
+	end
+end
+
+function iptables_kikiauth_get_ip_list()
+	local l = {}
+	for line in luci.util.execi("iptables-save -t nat | grep '%s -d'" % {chain}) do
+		table.insert(l, line:match('%-d (%d+.%d+.%d+.%d+)'))
+	end
+	return l
+end
+
+function iptables_kikiauth_delete_iprule(iplist)
+	for _, ip in ipairs(iplist) do
+		local c = "iptables -t nat -D %s -d %s -p tcp -m tcp --dport 443 -j ACCEPT" % {chain, ip}
+		luci.sys.call(c)
+		c = "iptables -t filter-D %s -d %s -p tcp -m tcp --dport 443 -j ACCEPT" % {chain, ip}
+		luci.sys.call(c)
+	end
+	-- If there is no rule left, delete the chain
+	local existing = iptables_kikiauth_get_ip_list()
+	if existing == {} then
+		iptables_kikiauth_delete_chain()
+	end
 end
 
 function find_and_add_new_IP(service)
 	if service == "facebook" then
 		local sys = require "luci.sys"
 		local ips = get_oauth_ip_list(service)
-		local output = sys.exec("ping -c 1 www.facebook.com | grep '64 bytes' | awk '{print $4}'")
-		local ping_ip = output:sub(1, output:len()-2)
-		for i=1,# ips do
-			if string.find(ips[i],ping_ip) == nil then
-				table.insert(ips, ping_ip)
-			end
+		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
+		local ping_ip = luci.util.trim(output):sub(1, -2)
+		if not luci.util.contains(ips, ping_ip) then
+			table.insert(ips, ping_ip)
 		end
 		local uci = luci.model.uci.cursor()
 		uci:set_list("kikiauth", service, "ips", ips)
@@ -245,5 +355,3 @@ function find_and_add_new_IP(service)
 		uci:commit("kikiauth")
     end
 end
-
-

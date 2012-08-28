@@ -87,7 +87,25 @@ end
 function action_redirect_to_success_page()
     local uci = require "luci.model.uci".cursor()
     local success_url = uci:get("kikiauth","oauth_success_page","success_url")
-    luci.http.redirect(success_url)
+    -- If the admin provides an URL, use it to redirect the client to. If not, redirect the client to his original request.
+    if  success_url ~= nil then
+        -- fix bug when the admin only enter a white-space string.
+        -- In this case when also redirect the client to his original request.
+        if luci.util.trim(success_url) ~= "" then
+            luci.http.redirect(success_url)
+        else
+            local sauth = require "luci.sauth"
+            local original_url = sauth.read("1")
+            sauth.kill("1")
+            luci.http.redirect(original_url)
+            return
+        end
+    else
+        local sauth = require "luci.sauth"
+        local original_url = sauth.read("1")
+        sauth.kill("1")
+        luci.http.redirect(original_url)
+    end
 end
 
 function action_auth_response_to_gw()
@@ -107,6 +125,13 @@ function action_auth_response_to_gw()
     end
 end
 
+function facebook_token_validate()
+
+end
+
+function google_token_validate()
+
+end
 -- Get IP list for an OAuth service.
 -- @param service "facebook" or "google"
 function get_oauth_ip_list(service)

@@ -29,7 +29,23 @@ end
 -- Functions for the button
 function o.write(self, section)
 	if self.inputstyle == 'apply' then
+		-- Create iptables chain
+		authserver.iptables_kikiauth_delete_chain()
 		local r = authserver.iptables_kikiauth_create_chain()
+		-- Get IPs to add to iptables chain
+		local services = authserver.get_enabled_OAuth_service_list()
+		local ips = {}
+		for _, serv in ipairs(services) do
+			local combine = luci.util.combine(ips, authserver.get_oauth_ip_list(serv))
+			-- Avoid to use nil table.
+			if combine ~= nil then ips = combine end
+		end
+		-- Add rule to iptables
+		for _, ip in ipairs(ips) do
+			authserver.iptables_kikiauth_add_iprule(ip)
+		end
+		-- Insert KikiAuth rule to WifiDog chain
+		authserver.iptables_kikiauth_insert_to_wifidog()
 		if r then self:set_state('remove') end
 	else
 		if authserver.iptables_kikiauth_delete_chain() then self:set_state('apply') end

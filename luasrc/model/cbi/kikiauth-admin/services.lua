@@ -61,6 +61,11 @@ end
 
 m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to work with WifiDog. KikiAuth support logging in with popular OAuth services account.")) -- We want to edit the uci config file /etc/config/kikiauth
 
+s = m:section(NamedSection, "oauth_success_page", "success_page", "Success page",
+              translate("You can set a default success page which users will be redirected to after loginning successfully. If not specified, the users will be redirected to the URL which they typed before when trying to access the Internet at the first time."))
+p = s:option(Value, "success_url", "Success URL")
+p.default = 'http://mbm.vn'
+
 s = m:section(NamedSection, "facebook", "oauth_services", "Facebook",
               translate("You can register your own Facebook app and use its parameters here."))
 

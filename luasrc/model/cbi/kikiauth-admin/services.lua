@@ -61,6 +61,11 @@ end
 
 m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to work with WifiDog. KikiAuth support logging in with popular OAuth services account.")) -- We want to edit the uci config file /etc/config/kikiauth
 
+s = m:section(NamedSection, "oauth_success_page", "success_page", "Success page",
+              translate("You can set a default success page which users will be redirected to after loginning successfully. If not specified, the users will be redirected to the URL which they typed before when trying to access the Internet at the first time."))
+p = s:option(Value, "success_url", "Success URL")
+p.default = 'http://mbm.vn'
+
 s = m:section(NamedSection, "facebook", "oauth_services", "Facebook",
               translate("You can register your own Facebook app and use its parameters here."))
 
@@ -74,10 +79,7 @@ p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Facebook app."))
 p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
-p = s:option(Value, "success_page", "Success page after successfully logining",
-                translate("If not specified, the user will be driven to the URL that he typed before - when trying to access the internet."))
-p.default = 'http://mbm.vn'
-p:depends('enabled', '1')
+
 ---***---
 p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
@@ -131,10 +133,6 @@ p:depends('enabled', '1')
 p.default = '396818136722.apps.googleusercontent.com'
 p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app."))
-p:depends('enabled', '1')
-p = s:option(Value, "success_page", "Success page after successfully logining",
-                translate("If not specified, the user will be driven to the URL that he typed before - when trying to access the internet."))
-p.default = 'http://mbm.vn'
 p:depends('enabled', '1')
 p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')

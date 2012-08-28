@@ -85,7 +85,9 @@ function get_enabled_OAuth_service_list()
 end
 
 function action_redirect_to_success_page()
-    luci.http.redirect("http://mbm.vn")
+    local uci = require "luci.model.uci".cursor()
+    local success_url = uci:get("kikiauth","oauth_success_page","success_url")
+    luci.http.redirect(success_url)
 end
 
 function action_auth_response_to_gw()

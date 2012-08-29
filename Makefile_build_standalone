@@ -15,8 +15,8 @@ define Package/$(PKG_NAME)
   SECTION:=luci
   CATEGORY:=LuCI
   SUBMENU:=3rd Party
-  TITLE:=LuCI kikiauth
-  DEPENDS:=
+  TITLE:=Splash login with OAuth
+  DEPENDS:=wget wifidog
 endef
 
 define Package/$(PKG_NAME)/description

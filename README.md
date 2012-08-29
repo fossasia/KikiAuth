@@ -16,5 +16,6 @@ Build ipk package
 -----
 Copy the folder to openwrt/package (source tree)
 Rename Makefile_build_standalone to Makefile (replace the old Makefile)
+Rename "dist" folder to "root"
 Choose the luci-app-kikiauth in"make menuconfig".
 Run "make package/luci-app-kikiauth/compile V=99" to build.

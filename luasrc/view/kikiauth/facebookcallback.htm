@@ -26,8 +26,10 @@
    </head>
    <body>
    <script>
-        var accessToken = hashGetParameterByName("access_token");       		//window.location.hash.substring(1).split("&")[0].split("=")[1];
-        var gwRedirectURI = "http://192.168.2.1:2060/wifidog/auth?token="+accessToken;
+        var accessToken = hashGetParameterByName("access_token");
+        var gw_address = hashGetParameterByName("state");
+        //window.location.hash.substring(1).split("&")[0].split("=")[1];
+        var gwRedirectURI = "http://"+gw_address+"/wifidog/auth?token="+accessToken;
         window.open(gwRedirectURI,"_self");
    </script>
    </body>

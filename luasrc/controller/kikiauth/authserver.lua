@@ -111,12 +111,19 @@ end
 function action_auth_response_to_gw()
     local token = luci.http.formvalue("token")
     local url = "https://graph.facebook.com/me?access_token=%s" % {token}
-    local response
+    local response = ''
     local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
     if wget then
         response = wget:read("*all")
         wget:close()
     end
+
+    if (luci.util.trim(response) == '') then
+		-- If response == '', we got HTTP error status. That token is not valid for the service.
+		-- Try other service
+		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {token}
+		response = luci.util.exec("wget --no-check-certificate -qO- %s" % {url})
+	end
 
     if string.find(response, "id", 1) ~= nil then
         luci.http.write("Auth: 1")

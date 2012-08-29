@@ -1,10 +1,7 @@
 <%
 local uci = require "luci.model.uci".cursor()
-local sauth = require "luci.sauth"
 local enabled_services = {}
 local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
-local url = luci.http.formvalue("url")
-sauth.write("1",url)
 function check_service_enabled(sect)
 	if sect.enabled == '1' then
 		local name = sect['.name']
@@ -47,7 +44,16 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 	}
 
 	function facebookOAuth(){
-		window.open(authServerAddress+"oauth/facebookcallback?app_id=<%= fb_app_id %>&redirect_uri=<%= fb_redirect_uri %>","_self");
+        var path = 'https://www.facebook.com/dialog/oauth?';
+        var appID = '<%= fb_app_id %>';
+   		var redirect_uri = '<%= fb_redirect_uri %>';
+   		var queryParams = ['client_id=' + appID,
+     		'redirect_uri='+redirect_uri,
+     		'response_type=token',
+     		'status=abc'];
+   		var query = queryParams.join('&');
+   		var url = path + query;
+   		window.open(url,"_parent");
 //,"left="+left+",width="+width+",height="+height);
 	}
 	</script>

@@ -88,92 +88,54 @@ p = s:option(Flag, "check_enabled", translate("Periodically check the Facebook I
 p:depends('enabled', '1')
 p = s:option(ListValue, "day", translate("Day"))
 p:depends('check_enabled', '1')
-p:value("Sun", translate("Sunday"))
-p:value("Mon", translate("Monday"))
-p:value("Tue", translate("Tuesday"))
-p:value("Wed", translate("Wednesday"))
-p:value("Thu", translate("Thursday"))
-p:value("Fri", translate("Friday"))
-p:value("Sat", translate("Saturday"))
-p:value("Every", translate("Everyday"))
+local weekdays = {{'Sun', 'Sunday'},
+                  {'Mon', 'Monday'},
+                  {'Tue', 'Tuesday'},
+                  {'Wed', 'Wednesday'},
+                  {'Thu', 'Thursday'},
+                  {'Fri', 'Friday'},
+                  {'Sat', 'Saturday'},
+                  {'Every', 'Everyday'}}
+for _, d in ipairs(weekdays) do
+	p:value(d[1], translate(d[2]))
+end
 p = s:option(ListValue, "time", translate("Time"))
 p:depends('check_enabled', '1')
-p:value("00", translate("0"))
-p:value("01", translate("1"))
-p:value("02", translate("2"))
-p:value("03", translate("3"))
-p:value("04", translate("4"))
-p:value("05", translate("5"))
-p:value("06", translate("6"))
-p:value("07", translate("7"))
-p:value("08", translate("8"))
-p:value("09", translate("9"))
-p:value("10", translate("10"))
-p:value("11", translate("11"))
-p:value("12", translate("12"))
-p:value("13", translate("13"))
-p:value("14", translate("14"))
-p:value("15", translate("15"))
-p:value("16", translate("16"))
-p:value("17", translate("17"))
-p:value("18", translate("18"))
-p:value("19", translate("19"))
-p:value("20", translate("20"))
-p:value("21", translate("21"))
-p:value("22", translate("22"))
-p:value("23", translate("23"))
+for i = 0, 23 do
+	p:value("%02d" % {i}, tostring(i))
+end
 
 ---***---
 s = m:section(NamedSection, "google", "oauth_services", "Google",
               translate("You can register your own Google app and use its parameters here."))
 s:option(SerFlag, "enabled", translate("Enabled?"))
+
 p = s:option(Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
 p.default = '396818136722.apps.googleusercontent.com'
+
 p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app.<br/>\
              Have to be HTTPS. Its domain/IP must be included in the list below."))
 p:depends('enabled', '1')
+
 p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')
+
 p = s:option(Flag, "check_enabled", translate("Periodically check the Google IPs list?"))
 p:depends('enabled', '1')
+
 p = s:option(ListValue, "day", translate("Day"))
 p:depends('check_enabled', '1')
-p:value("Sun", translate("Sunday"))
-p:value("Mon", translate("Monday"))
-p:value("Tue", translate("Tuesday"))
-p:value("Wed", translate("Wednesday"))
-p:value("Thu", translate("Thursday"))
-p:value("Fri", translate("Friday"))
-p:value("Sat", translate("Saturday"))
-p:value("Every", translate("Everyday"))
+for _, d in ipairs(weekdays) do
+	p:value(d[1], translate(d[2]))
+end
+
 p = s:option(ListValue, "time", translate("Time"))
 p:depends('check_enabled', '1')
-p:value("00", translate("0"))
-p:value("01", translate("1"))
-p:value("02", translate("2"))
-p:value("03", translate("3"))
-p:value("04", translate("4"))
-p:value("05", translate("5"))
-p:value("06", translate("6"))
-p:value("07", translate("7"))
-p:value("08", translate("8"))
-p:value("09", translate("9"))
-p:value("10", translate("10"))
-p:value("11", translate("11"))
-p:value("12", translate("12"))
-p:value("13", translate("13"))
-p:value("14", translate("14"))
-p:value("15", translate("15"))
-p:value("16", translate("16"))
-p:value("17", translate("17"))
-p:value("18", translate("18"))
-p:value("19", translate("19"))
-p:value("20", translate("20"))
-p:value("21", translate("21"))
-p:value("22", translate("22"))
-p:value("23", translate("23"))
+for i = 0, 23 do
+	p:value("%02d" % {i}, tostring(i))
+end
 
 --[[
 s = m:section(NamedSection, "twitter", "oauth_services", "Twitter")

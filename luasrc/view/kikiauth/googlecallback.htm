@@ -4,17 +4,18 @@
 </head>
 <body >
 <script type="text/javascript">
-	var loginPageUrl = "http://localhost/oauth/login.htm";
-	var gwID="192.168.2.1:2060";
 	// First, parse the query string
 var params = {}, queryString = location.hash.substring(1),
     regex = /([^&=]+)=([^&]*)/g, m;
 while (m = regex.exec(queryString)) {
-  params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+    params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
 }
+var gw_address = params['state'];
+var auth_address = gw_address.split(":")[0];
+var loginPageUrl = "http://"+auth_address+"/cgi-bin/luci/kikiauth/login/";
 //check the query string to give a proper response
 if(params['access_token']!= null) {
-window.open("http://"+gwID+"/wifidog/auth?token="+params['access_token'],"_parent");
+window.open("http://"+gw_address+"/wifidog/auth?token="+params['access_token'],"_parent");
 }
 else if(params['error']!=null) {window.open(loginPageUrl,"_parent");}
 </script>

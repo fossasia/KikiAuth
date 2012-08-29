@@ -34,6 +34,7 @@ function index()
     entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
     entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
     entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
+    entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage.htm"), "", 70).dependent=false
 end
 
 function action_say_pong()
@@ -98,12 +99,12 @@ function action_redirect_to_success_page()
             --local original_url = sauth.read("abc")
             --luci.http.redirect(original_url)
             --return
-            luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have granted Internet access permission!</h2>")
+            luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have been granted Internet access permission!</h2>")
         end
     else
         --local sauth = require "luci.sauth"
         --local original_url = sauth.read("abc")
-        luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have granted Internet access permission!</h2>")
+        luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have been granted Internet access permission!</h2>")
         --luci.http.redirect(original_url)
     end
 end

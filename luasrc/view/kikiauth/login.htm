@@ -37,27 +37,49 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 
 	<script type="text/javascript">
 	var width=screen.width/2+50,height=screen.height/2,left=screen.width/4,top=screen.height/4;
-	var authServerAddress = "http://"+getParameterByName("gw_address")+"/cgi-bin/luci/kikiauth/";
+    var gw_address = getParameterByName("gw_address");
+    var gw_port = getParameterByName("gw_port");
+	var authServerAddress = "http://"+gw_address+"/cgi-bin/luci/kikiauth/";
+
+    function build_uri(path, appID, redirect_uri, response_type, state, scope){
+        var queryParams;
+        if (scope != '') {
+            queryParams = ['client_id=' + appID,
+                            'redirect_uri='+redirect_uri,
+                            'response_type='+response_type,
+                            'state='+state,
+                            'scope='+scope];
+        } else {
+            queryParams = ['client_id=' + appID,
+                            'redirect_uri='+redirect_uri,
+                            'response_type='+response_type,
+                            'state='+state];
+        }
+        var query = queryParams.join('&');
+        var url = path + query;
+        return url;
+    }
 
 	function googleOAuth(){
-		window.open("https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile&redirect_uri=<%= gg_redirect_uri %>&response_type=token&client_id=<%= gg_app_id %>","_self");
-//,"left="+left+",width="+width+",height="+height);
+        var path = 'https://accounts.google.com/o/oauth2/auth?';
+        var appID = '<%= gg_app_id %>';
+   		var redirect_uri = '<%= gg_redirect_uri %>';
+   		var response_type = 'token';
+        var state = gw_address+':'+gw_port;
+     	var scope = 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+   		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
+   		window.open(url,"_parent");
 	}
 
 	function facebookOAuth(){
-        var gw_address = getParameterByName("gw_address");
-        var gw_port = getParameterByName("gw_port");
         var path = 'https://www.facebook.com/dialog/oauth?';
         var appID = '<%= fb_app_id %>';
    		var redirect_uri = '<%= fb_redirect_uri %>';
-   		var queryParams = ['client_id=' + appID,
-     		'redirect_uri='+redirect_uri,
-     		'response_type=token',
-     		'state='+gw_address+':'+gw_port];
-   		var query = queryParams.join('&');
-   		var url = path + query;
+   		var response_type = 'token';
+        var state = gw_address+':'+gw_port;
+     	var scope = '';
+        var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
    		window.open(url,"_parent");
-//,"left="+left+",width="+width+",height="+height);
 	}
 	</script>
 </head>

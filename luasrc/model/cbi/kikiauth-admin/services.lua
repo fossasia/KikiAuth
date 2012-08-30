@@ -19,9 +19,13 @@ SerFlag = class(Flag)
 function SerFlag.write(self, section, value)
 	if value == '1' then
 		if not authserver.iptables_kikiauth_chain_exist() then
-			luci.sys.call("echo 'write %s %s' >> /tmp/log_kikiauth.txt" % {section, value})
 			authserver.iptables_kikiauth_create_chain()
 		end
+		-- We write the default value for "ips" option below.
+		-- Due to a bug (?), this value is not written.
+		local default_ips = self.section.fields['ips'].default
+		local ip_option = self.section.fields['ips']
+		ip_option:write(section, default_ips)
 	end
 	Flag.write(self, section, value)
 end
@@ -42,12 +46,18 @@ end
 
 
 IPList = class(DynamicList)
+function IPList.cfgvalue(self, section)
+	return DynamicList.cfgvalue(self, section) or self.default
+end
+
 function IPList.write(self, section, value)
+	-- There is a bug (?) from CBI, by which the default value is not sent to write.
 	if authserver.iptables_kikiauth_chain_exist() then
 		local added = authserver.iptables_kikiauth_get_ip_list()
 		for _, address in ipairs(value) do
 			authserver.iptables_kikiauth_add_iprule(address, added)
 		end
+		authserver.iptables_kikiauth_insert_to_wifidog()
 	end
 	DynamicList.write(self, section, value)
 end
@@ -84,6 +94,9 @@ p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
 ---***---
 p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
+p.default = {'www-slb-10-01-prn1.facebook.com',
+             'www-slb-11-12-prn1.facebook.com',
+             's-static.ak.fbcdn.net'}
 
 ---***---
 p = s:option(Flag, "check_enabled", translate("Periodically check the Facebook IPs list?"))
@@ -114,15 +127,22 @@ s:option(SerFlag, "enabled", translate("Enabled?"))
 
 p = s:option(Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
-p.default = '396818136722.apps.googleusercontent.com'
+p.default = '242929894222-3909mjqkmgcdo9ro6mr91aiod083g834.apps.googleusercontent.com'
 
 p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app.<br/>\
              Have to be HTTPS. Its domain/IP must be included in the list below."))
 p:depends('enabled', '1')
+p.default = 'https://kikiauth.appspot.com/google'
 
 p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')
+p.default = {'accounts.l.google.com',
+             'accounts-cctld.l.google.com',
+             'clients.l.google.com',
+             'googlehosted.l.googleusercontent.com',
+             'ssl.gstatic.com',
+             'kikiauth.appspot.com'}
 
 p = s:option(Flag, "check_enabled", translate("Periodically check the Google IPs list?"))
 p:depends('enabled', '1')

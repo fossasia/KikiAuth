@@ -34,7 +34,7 @@ function index()
     entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
     entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
     entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
-    entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage.htm"), "", 70).dependent=false
+    entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage"), "", 70).dependent=false
 end
 
 function action_say_pong()
@@ -86,51 +86,53 @@ function get_enabled_OAuth_service_list()
 end
 
 function action_redirect_to_success_page()
-    local uci = require "luci.model.uci".cursor()
-    local success_url = uci:get("kikiauth","oauth_success_page","success_url")
-    -- If the admin provides an URL, use it to redirect the client to. If not, redirect the client to his original request.
-    if  success_url ~= nil then
-        -- fix bug when the admin only enters a white-space string.
-        -- In this case, we also redirect the client to his original request.
-        if luci.util.trim(success_url) ~= "" then
-            luci.http.redirect(success_url)
-        else
-            --local sauth = require "luci.sauth"
-            --local original_url = sauth.read("abc")
-            --luci.http.redirect(original_url)
-            --return
-            luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have been granted Internet access permission!</h2>")
-        end
-    else
-        --local sauth = require "luci.sauth"
-        --local original_url = sauth.read("abc")
-        luci.http.write("<h1>WELCOME!!!</h1>\n<h2>You have been granted Internet access permission!</h2>")
-        --luci.http.redirect(original_url)
-    end
+	local uci = require "luci.model.uci".cursor()
+	local success_url = uci:get("kikiauth","oauth_success_page","success_url")
+	-- If the admin provides an URL, use it to redirect the client to. If not, redirect the client to his original request.
+	if  success_url ~= nil then
+		-- fix bug when the admin only enters a white-space string.
+		-- In this case, we also redirect the client to his original request.
+		if luci.util.trim(success_url) ~= "" then
+			luci.http.redirect(success_url)
+		else
+			local success_text = uci:get("kikiauth", "oauth_success_page", "success_text")
+			luci.http.write(success_text)
+			--local sauth = require "luci.sauth"
+			--local original_url = sauth.read("abc")
+			--luci.http.redirect(original_url)
+			--return
+		end
+	else
+		local success_text = uci:get("kikiauth", "oauth_success_page", "success_text")
+		luci.http.write(success_text)
+		--local sauth = require "luci.sauth"
+		--local original_url = sauth.read("abc")
+		--luci.http.redirect(original_url)
+	end
 end
 
 function action_auth_response_to_gw()
-    local token = luci.http.formvalue("token")
-    local url = "https://graph.facebook.com/me?access_token=%s" % {token}
-    local response = ''
-    local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
-    if wget then
-        response = wget:read("*all")
-        wget:close()
-    end
+	local token = luci.http.formvalue("token")
+	local url = "https://graph.facebook.com/me?access_token=%s" % {token}
+	local response = ''
+	local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
+	if wget then
+		response = wget:read("*all")
+		wget:close()
+	end
 
-    if (luci.util.trim(response) == '') then
+	if (luci.util.trim(response) == '') then
 		-- If response == '', we got HTTP error status. That token is not valid for the service.
 		-- Try other service
 		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {token}
 		response = luci.util.exec("wget --no-check-certificate -qO- %s" % {url})
 	end
 
-    if string.find(response, "id", 1) ~= nil then
-        luci.http.write("Auth: 1")
-    else
-        luci.http.write("Auth: 6")
-    end
+	if string.find(response, "id", 1) ~= nil then
+		luci.http.write("Auth: 1")
+	else
+		luci.http.write("Auth: 6")
+	end
 end
 
 function facebook_token_validate()

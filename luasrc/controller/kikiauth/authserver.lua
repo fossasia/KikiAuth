@@ -28,18 +28,18 @@ function string.endswith(self, suffix)
 end
 
 function index()
-    entry({"kikiauth", "ping"}, call("action_say_pong"), "Click here", 10).dependent=false
-    entry({"kikiauth", "auth"}, call("action_auth_response_to_gw"), "", 20).dependent=false
-    entry({"kikiauth", "portal"}, call("action_redirect_to_success_page"), "Success page", 30).dependent=false
-    entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
-    entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
-    entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
-    entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage"), "", 70).dependent=false
+	entry({"kikiauth", "ping"}, call("action_say_pong"), "Click here", 10).dependent=false
+	entry({"kikiauth", "auth"}, call("action_auth_response_to_gw"), "", 20).dependent=false
+	entry({"kikiauth", "portal"}, call("action_redirect_to_success_page"), "Success page", 30).dependent=false
+	entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
+	entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
+	entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
+	entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage"), "", 70).dependent=false
 end
 
 function action_say_pong()
-    luci.http.prepare_content("text/plain")
-    luci.http.write("Pong")
+	luci.http.prepare_content("text/plain")
+	luci.http.write("Pong")
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
 	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 	--find new ip
@@ -178,58 +178,58 @@ function iptables_kikiauth_chain_exist()
 end
 
 function check_fb_ip2()
-    local httpc = require "luci.httpclient"
-    local uci = require "luci.model.uci".cursor()
-    local ips = {}
-    ips = uci:get_list("kikiauth", "facebook", "ips")
-    for i = 1, #ips do
-        -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
-        -- (because when one element is removed,
-        -- the length of the ips table is correspondingly subtracted by 1).
-    	if ips[i] == nil then
-    	    break
-    	end
-        local res, code, msg = httpc.request_to_buffer("http://"..ips[i])
-        print(code, msg)
-        if code == -2 then
-            table.remove(ips, i)
-            -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' table
-            -- that we want to loop in the next route because after removing an element,
-            -- the next element will fill the removed position.
-            i = i - 1
-        end
-    end
-    for i=1,# ips do
-        print(i, ips[i])
-    end
+	local httpc = require "luci.httpclient"
+	local uci = require "luci.model.uci".cursor()
+	local ips = {}
+	ips = uci:get_list("kikiauth", "facebook", "ips")
+	for i = 1, #ips do
+		-- the "if" is used to fix the bug of accessing a nil value of the "ips" table
+		-- (because when one element is removed,
+		-- the length of the ips table is correspondingly subtracted by 1).
+		if ips[i] == nil then
+			break
+		end
+		local res, code, msg = httpc.request_to_buffer("http://"..ips[i])
+		print(code, msg)
+		if code == -2 then
+			table.remove(ips, i)
+			-- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' table
+			-- that we want to loop in the next route because after removing an element,
+			-- the next element will fill the removed position.
+			i = i - 1
+		end
+	end
+	for i=1,# ips do
+		print(i, ips[i])
+	end
 end
 
 --check a particular service IPs list
 --@param service: "facebook" or "google" ...
 function check_ips(service)
-    local uci = require "luci.model.uci".cursor()
-    local ips = {}
-    ips = uci:get_list("kikiauth", service, "ips")
-    local sys = require "luci.sys"
-    for i = 1, #ips do
-        -- the "if" is used to fix the bug of accessing a nil value of the "ips" table
-        -- (because when one element is removed,
-        -- the length of the ips table is correspondingly subtracted by 1).
-      	if ips[i] == nil then
-      	    break
-      	end
-	local output = sys.exec("ping -c 2 "..ips[i].." | grep '64 bytes' | awk '{print $1}'")
-	if string.find(output, "64") == nil then
-	    table.remove(ips, i)
-	    -- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
-        -- that we want to loop in the next route because after removing an element,
-        -- the next element will fill the removed position.
-	    i = i - 1
+	local uci = require "luci.model.uci".cursor()
+	local ips = {}
+	ips = uci:get_list("kikiauth", service, "ips")
+	local sys = require "luci.sys"
+	for i = 1, #ips do
+		-- the "if" is used to fix the bug of accessing a nil value of the "ips" table
+		-- (because when one element is removed,
+		-- the length of the ips table is correspondingly subtracted by 1).
+		if ips[i] == nil then
+			break
+		end
+		local output = sys.exec("ping -c 2 "..ips[i].." | grep '64 bytes' | awk '{print $1}'")
+		if string.find(output, "64") == nil then
+			table.remove(ips, i)
+			-- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
+			-- that we want to loop in the next route because after removing an element,
+			-- the next element will fill the removed position.
+			i = i - 1
+		end
 	end
-    end
-    uci:set_list("kikiauth", service, "ips", ips)
-    uci:save("kikiauth")
-    uci:commit("kikiauth")
+	uci:set_list("kikiauth", service, "ips", ips)
+	uci:save("kikiauth")
+	uci:commit("kikiauth")
 end
 
 function iptables_kikiauth_chain_exist_in_table(tname)
@@ -381,5 +381,5 @@ function find_and_add_new_IP(service)
 		uci:set_list("kikiauth", service, "ips", ips)
 		uci:save("kikiauth")
 		uci:commit("kikiauth")
-    end
+	end
 end

@@ -204,30 +204,18 @@ function check_fb_ip2()
 	end
 end
 
---check a particular service IPs list
---@param service: "facebook" or "google" ...
+-- Check a particular service IPs list
+-- @param service: "facebook" or "google" ...
 function check_ips(service)
-	local uci = require "luci.model.uci".cursor()
-	local ips = {}
-	ips = uci:get_list("kikiauth", service, "ips")
+	local uci = luci.model.uci.cursor()
+	local ips = uci:get_list("kikiauth", service, "ips")
 	local sys = require "luci.sys"
-	for i = 1, #ips do
-		-- the "if" is used to fix the bug of accessing a nil value of the "ips" table
-		-- (because when one element is removed,
-		-- the length of the ips table is correspondingly subtracted by 1).
-		if ips[i] == nil then
-			break
-		end
-		local output = sys.exec("ping -c 2 "..ips[i].." | grep '64 bytes' | awk '{print $1}'")
-		if string.find(output, "64") == nil then
-			table.remove(ips, i)
-			-- we have to subtract "i" by 1 to keep track of the correct index of the 'ips' t
-			-- that we want to loop in the next route because after removing an element,
-			-- the next element will fill the removed position.
-			i = i - 1
-		end
+	local newips = {}
+	for _, ip in ipairs(ips) do
+		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
+		if output and output:find("64") then table.insert(newips, ip) end
 	end
-	uci:set_list("kikiauth", service, "ips", ips)
+	uci:set_list("kikiauth", service, "ips", newips)
 	uci:save("kikiauth")
 	uci:commit("kikiauth")
 end

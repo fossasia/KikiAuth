@@ -13,10 +13,11 @@ var gw_address = params['state'];
 var auth_address = gw_address.split(":")[0];
 var loginPageUrl = "http://" + auth_address + "/cgi-bin/luci/kikiauth/login/";
 //check the query string to give a proper response
-if(params['access_token'] != null) {
-	window.open("http://" + gw_address+"/wifidog/auth?token=" + params['access_token'], "_parent");
+if (params['access_token'] != null) {
+	accessToken = 'google_' + params['access_token']
+	window.open("http://" + gw_address + "/wifidog/auth?token=" + accessToken, "_parent");
 }
-else if(params['error'] != null) {window.open(loginPageUrl, "_parent");}
+else if (params['error'] != null) {window.open(loginPageUrl, "_parent");}
 </script>
 </body>
 </html>

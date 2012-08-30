@@ -27,10 +27,11 @@
    <body>
    <script>
         var accessToken = hashGetParameterByName("access_token");
+        accessToken = 'facebook_' + accessToken;
         var gw_address = hashGetParameterByName("state");
         //window.location.hash.substring(1).split("&")[0].split("=")[1];
-        var gwRedirectURI = "http://"+gw_address+"/wifidog/auth?token="+accessToken;
-        window.open(gwRedirectURI,"_self");
+        var gwRedirectURI = "http://" + gw_address + "/wifidog/auth?token=" + accessToken;
+        window.open(gwRedirectURI, "_self");
    </script>
    </body>
   </html>

@@ -310,8 +310,10 @@ function iptables_kikiauth_remove_from_wifidog()
 		return
 	end
 	-- Delete KikiAuth rule from Wifidog
-	c = "iptables -t filter -D %s -j %s" % {wd_internet_chname, chain}
-	r = luci.sys.call(c)
+	while r == 0 do
+		c = "iptables -t filter -D %s -j %s" % {wd_internet_chname, chain}
+		r = luci.sys.call(c)
+	end
 	return (r == 0)
 end
 

@@ -113,35 +113,26 @@ end
 
 function action_auth_response_to_gw()
 	local token = luci.http.formvalue("token")
-	local url = "https://graph.facebook.com/me?access_token=%s" % {token}
+	local url = nil
 	local response = ''
-	local wget = assert(io.popen("wget --no-check-certificate -qO- %s" % {url}))
-	if wget then
-		response = wget:read("*all")
-		wget:close()
+
+	if token:startswith('facebook_') then
+		url = "https://graph.facebook.com/me?access_token=%s" % {token:sub(10)}
+	elseif token:startswith('google_') then
+		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {token:sub(8)}
 	end
 
-	if (luci.util.trim(response) == '') then
-		-- If response == '', we got HTTP error status. That token is not valid for the service.
-		-- Try other service
-		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {token}
+	if url then
 		response = luci.util.exec("wget --no-check-certificate -qO- %s" % {url})
 	end
 
-	if string.find(response, "id", 1) ~= nil then
+	if response and string.find(response, "id", 1) ~= nil then
 		luci.http.write("Auth: 1")
 	else
 		luci.http.write("Auth: 6")
 	end
 end
 
-function facebook_token_validate()
-
-end
-
-function google_token_validate()
-
-end
 -- Get IP list for an OAuth service.
 -- @param service "facebook" or "google"
 function get_oauth_ip_list(service)

@@ -3,8 +3,14 @@
 	<title>Gateway message</title>
 </head>
 <body>
+	<script>
+		function gotoLoginPage(){
+			window.open('http://'+location.host+'/cgi-bin/luci/kikiauth/login','_self');
+		}
+
+	</script>
 	<h1 style="text-align:center">Sorry, you are unauthenticated. </h1>
 	<h2 style="text-align:center">There are errors in the authentication process. </br>It may be your session is over, and you have been withdrawn Internet accessibility.</h2>
-	<h2 style="text-align:center">You need to login again.</h2>
+	<h2 style="text-align:center">You need to <a href="javascript:gotoLoginPage()">login</a> again.</h2>
 </body>
 </html>

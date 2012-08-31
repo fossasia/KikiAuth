@@ -42,18 +42,46 @@ function action_say_pong()
 	luci.http.write("Pong")
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
 	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
-	--find new ip
+	--find and add new ip
 	for i=1, #enabled_OAuth_service_list do
 		find_and_add_new_IP(enabled_OAuth_service_list[i])
 	end
+end
 
+function get_enabled_OAuth_service_list()
+	local uci = require "luci.model.uci".cursor()
+	local enabled_OAuth_service_list = {}
+	local function check_service_enabled(sect)
+		if sect.enabled == '1' then
+			local name = sect['.name']
+			table.insert(enabled_OAuth_service_list, name)
+		end
+	end
+	uci:foreach("kikiauth", "oauth_services", check_service_enabled)
+	return enabled_OAuth_service_list
+end
+
+function find_and_add_new_IP(service)
+	if service == "facebook" then
+		local sys = require "luci.sys"
+		local ips = get_oauth_ip_list(service)
+		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
+		local ping_ip = luci.util.trim(output):sub(1, -2)
+		if not luci.util.contains(ips, ping_ip) then
+			table.insert(ips, ping_ip)
+		end
+		local uci = luci.model.uci.cursor()
+		uci:set_list("kikiauth", service, "ips", ips)
+		uci:save("kikiauth")
+		uci:commit("kikiauth")
+	end
 end
 
 -- the following code is for checking the enabled OAuth service IPs list.
 -- It first get out the day and time in the settings, and then,
 -- if it's time to check it will check.
 function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
-	for i = 1, #enabled_OAuth_service_list do
+	for i = 1, # enabled_OAuth_service_list do
 		local uci = require "luci.model.uci".cursor()
 		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
 		if check_enabled ~= nil then
@@ -72,17 +100,20 @@ function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
     end
 end
 
-function get_enabled_OAuth_service_list()
-	local uci = require "luci.model.uci".cursor()
-	local enabled_OAuth_service_list = {}
-	local function check_service_enabled(sect)
-		if sect.enabled == '1' then
-			local name = sect['.name']
-			table.insert(enabled_OAuth_service_list, name)
-		end
+-- Check a particular service IPs list
+-- @param service: "facebook" or "google" ...
+function check_ips(service)
+	local uci = luci.model.uci.cursor()
+	local ips = uci:get_list("kikiauth", service, "ips")
+	local sys = require "luci.sys"
+	local newips = {}
+	for _, ip in ipairs(ips) do
+		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
+		if output and output:find("64") then table.insert(newips, ip) end
 	end
-	uci:foreach("kikiauth", "oauth_services", check_service_enabled)
-	return enabled_OAuth_service_list
+	uci:set_list("kikiauth", service, "ips", newips)
+	uci:save("kikiauth")
+	uci:commit("kikiauth")
 end
 
 function action_redirect_to_success_page()
@@ -141,18 +172,6 @@ function get_oauth_ip_list(service)
 	return to_ip_list(lip)
 end
 
-function hostname_to_ips(host)
-	local l = {}
-	local rs = nixio.getaddrinfo(host, 'inet', 'https')
-	if not rs then
-		return l;
-	end
-	for i, r in pairs(rs) do
-		if r.socktype == 'stream' then table.insert(l, r.address) end
-	end
-	return l
-end
-
 function to_ip_list(mixlist)
 	if mixlist == nil then
 		return {}
@@ -170,6 +189,18 @@ function to_ip_list(mixlist)
 		end
 	end
 	return allip
+end
+
+function hostname_to_ips(host)
+	local l = {}
+	local rs = nixio.getaddrinfo(host, 'inet', 'https')
+	if not rs then
+		return l;
+	end
+	for i, r in pairs(rs) do
+		if r.socktype == 'stream' then table.insert(l, r.address) end
+	end
+	return l
 end
 
 function iptables_kikiauth_chain_exist()
@@ -202,22 +233,6 @@ function check_fb_ip2()
 	for i=1,# ips do
 		print(i, ips[i])
 	end
-end
-
--- Check a particular service IPs list
--- @param service: "facebook" or "google" ...
-function check_ips(service)
-	local uci = luci.model.uci.cursor()
-	local ips = uci:get_list("kikiauth", service, "ips")
-	local sys = require "luci.sys"
-	local newips = {}
-	for _, ip in ipairs(ips) do
-		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
-		if output and output:find("64") then table.insert(newips, ip) end
-	end
-	uci:set_list("kikiauth", service, "ips", newips)
-	uci:save("kikiauth")
-	uci:commit("kikiauth")
 end
 
 function iptables_kikiauth_chain_exist_in_table(tname)
@@ -353,21 +368,5 @@ function iptables_kikiauth_delete_iprule(iplist)
 	local existing = iptables_kikiauth_get_ip_list()
 	if existing == {} then
 		iptables_kikiauth_delete_chain()
-	end
-end
-
-function find_and_add_new_IP(service)
-	if service == "facebook" then
-		local sys = require "luci.sys"
-		local ips = get_oauth_ip_list(service)
-		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
-		local ping_ip = luci.util.trim(output):sub(1, -2)
-		if not luci.util.contains(ips, ping_ip) then
-			table.insert(ips, ping_ip)
-		end
-		local uci = luci.model.uci.cursor()
-		uci:set_list("kikiauth", service, "ips", ips)
-		uci:save("kikiauth")
-		uci:commit("kikiauth")
 	end
 end

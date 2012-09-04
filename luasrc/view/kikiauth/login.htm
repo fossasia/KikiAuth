@@ -1,16 +1,20 @@
 <%
 local uci = require "luci.model.uci".cursor()
 local enabled_services = {}
-local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
+local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri, fb_scope, gg_scope
 function check_service_enabled(sect)
 	if sect.enabled == '1' then
 		local name = sect['.name']
 		if name == 'facebook' then
 			fb_app_id = sect.app_id
 			fb_redirect_uri = sect.redirect_uri
+			fb_scope = uci:get('kikiauth','facebook','scope')
+			if fb_scope == nil then fb_scope = '' end
 		elseif name == 'google' then
 			gg_app_id = sect.app_id
 			gg_redirect_uri = sect.redirect_uri
+			gg_scope = uci:get('kikiauth', 'google', 'scope')
+			if fb_scope == nil then fb_scope = '' end
 		end
 		table.insert(enabled_services, name)
 	end
@@ -66,9 +70,9 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 		var redirect_uri = '<%= gg_redirect_uri %>';
 		var response_type = 'token';
 		var state = gw_address + ':' + gw_port;
-		var scope = 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+		var scope = '<%= gg_scope %>';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 
 	function facebookOAuth(){
@@ -77,9 +81,9 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 		var redirect_uri = '<%= fb_redirect_uri %>';
 		var response_type = 'token';
 		var state = gw_address + ':' + gw_port;
-	 	var scope = '';
+	 	var scope = '<%= fb_scope %>';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 	</script>
 </head>

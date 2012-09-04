@@ -34,7 +34,7 @@ function index()
 	entry({"kikiauth", "login"}, template("kikiauth/login"), "Login page", 40).dependent=false
 	entry({"kikiauth", "oauth", "googlecallback"}, template("kikiauth/googlecallback"), "", 50).dependent=false
 	entry({"kikiauth", "oauth", "facebookcallback"}, template("kikiauth/facebookcallback"), "", 60).dependent=false
-	entry({"kikiauth","gw_message.php"}, template("kikiauth/gatewaymessage"), "", 70).dependent=false
+	entry({"kikiauth", "gw_message.php"}, template("kikiauth/gatewaymessage"), "", 70).dependent=false
 end
 
 function action_say_pong()

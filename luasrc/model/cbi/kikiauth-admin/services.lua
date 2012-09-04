@@ -90,6 +90,9 @@ p = s:option(Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Facebook app."))
 p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
+p = s:option(Value, "scope", "Scope", translate("These are the permissions your application requests."))
+p:depends('enabled', '1')
+p.default = ''
 
 ---***---
 p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
@@ -134,6 +137,9 @@ p = s:option(Value, "redirect_uri", "Redirect URI",
              Have to be HTTPS. Its domain/IP must be included in the list below."))
 p:depends('enabled', '1')
 p.default = 'https://kikiauth.appspot.com/google'
+p = s:option(Value, "scope", "Scope", translate("These are the permissions your application requests."))
+p:depends('enabled', '1')
+p.default = 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'
 
 p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')

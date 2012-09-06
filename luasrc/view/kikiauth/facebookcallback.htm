@@ -27,7 +27,7 @@
    <body>
    <script>
         var accessToken = hashGetParameterByName("access_token");
-        accessToken = 'facebook_' + accessToken;
+        accessToken = "facebook_" + accessToken;
         var gw_address = hashGetParameterByName("state");
         //window.location.hash.substring(1).split("&")[0].split("=")[1];
         var gwRedirectURI = "http://" + gw_address + "/wifidog/auth?token=" + accessToken;

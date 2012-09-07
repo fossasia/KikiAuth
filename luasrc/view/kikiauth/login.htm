@@ -66,7 +66,7 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 		var redirect_uri = '<%= gg_redirect_uri %>';
 		var response_type = 'token';
 		var state = gw_address + ':' + gw_port;
-		var scope = 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+		var scope = 'https://www.googleapis.com/auth/userinfo.email';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
 		window.open(url,"_parent");
 	}

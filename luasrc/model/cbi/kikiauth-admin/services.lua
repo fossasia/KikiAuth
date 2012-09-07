@@ -23,9 +23,11 @@ function SerFlag.write(self, section, value)
 		end
 		-- We write the default value for "ips" option below.
 		-- Due to a bug (?), this value is not written.
-		local default_ips = self.section.fields['ips'].default
-		local ip_option = self.section.fields['ips']
-		ip_option:write(section, default_ips)
+		if self.section.fields['ips'] then
+			local default_ips = self.section.fields['ips'].default
+			local ip_option = self.section.fields['ips']
+			ip_option:write(section, default_ips)
+		end
 	end
 	Flag.write(self, section, value)
 end
@@ -80,7 +82,9 @@ s:tab("ip", translate("Service IP addresses"))
 e = s:taboption("general", SerFlag, "enabled", translate("Enabled?"))
 
 ---***---
-p = s:taboption("general", Value, "app_id", "App ID/ Client ID")
+p = s:taboption("general", Value, "app_id", "App ID/ Client ID",
+                translate("The App ID/API Key of your <a href='https://developers.facebook.com/apps'>\
+                          registered Facebook app</a>."))
 p:depends('enabled', '1')
 p.default = '420756987974770'
 p = s:taboption("general", Value, "redirect_uri", "Redirect URI",
@@ -125,13 +129,25 @@ s:tab("ip", translate("Service IP addresses"))
 
 s:taboption("general", SerFlag, "enabled", translate("Enabled?"))
 
-p = s:taboption("general", Value, "app_id", "App ID/ Client ID")
+p = s:taboption("general", Flag, "googleall", translate("Accept all Google accounts?"),
+                translate("User can use any Google Account email to login.<br/>"))
+p:depends('enabled', '1')
+
+p = s:taboption("general", DynamicList, "googleapps", translate("Accept these Google Apps domains"),
+            translate("Ex. <i>mbm.vn</i>. User will login with <i>@mbm.vn</i> email.<br />\
+                      <b>Note</b>: To limit to these domains, you have to uncheck the\
+                      <i>all Google account</i> option above."))
+p:depends('enabled', '1')
+
+p = s:taboption("general", Value, "app_id", "App ID/ Client ID",
+                translate("The Client ID of your app registered in\
+                          <a href='https://code.google.com/apis/console/'>Google API Console</a>"))
 p:depends('enabled', '1')
 p.default = '242929894222-3909mjqkmgcdo9ro6mr91aiod083g834.apps.googleusercontent.com'
 
 p = s:taboption("general", Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app.<br/>\
-             Have to be HTTPS. Its domain/IP must be included in the list below."))
+             Have to be HTTPS. Its domain/IP must be included in <i>Service IP addresses</i> list (next tab)."))
 p:depends('enabled', '1')
 p.default = 'https://kikiauth.appspot.com/google'
 
@@ -158,6 +174,7 @@ p:depends('check_enabled', '1')
 for i = 0, 23 do
 	p:value("%02d" % {i}, tostring(i))
 end
+
 
 --[[
 s = m:section(NamedSection, "twitter", "oauth_services", "Twitter")

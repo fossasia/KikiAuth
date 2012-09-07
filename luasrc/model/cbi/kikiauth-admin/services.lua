@@ -74,28 +74,31 @@ m = Map("kikiauth", "KikiAuth", translate("KikiAuth creates a captive portal to 
 s = m:section(NamedSection, "facebook", "oauth_services", "Facebook",
               translate("You can register your own Facebook app and use its parameters here."))
 
-e = s:option(SerFlag, "enabled", translate("Enabled?"))
+s:tab("general", translate("General settings"))
+s:tab("ip", translate("Service IP addresses"))
+
+e = s:taboption("general", SerFlag, "enabled", translate("Enabled?"))
 
 ---***---
-p = s:option(Value, "app_id", "App ID/ Client ID")
+p = s:taboption("general", Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
 p.default = '420756987974770'
-p = s:option(Value, "redirect_uri", "Redirect URI",
+p = s:taboption("general", Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Facebook app."))
 p:depends('enabled', '1')
 p.default = 'http://openwrt.lan/cgi-bin/luci/kikiauth/oauth/facebookcallback'
 
 ---***---
-p = s:option(IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
+p = s:taboption("ip", IPList, "ips", "Facebook IPs",translate("List of Facebook IPs used for the gateway to open the traffic correctly while using Facebook OAuth."))
 p:depends('enabled', '1')
 p.default = {'www-slb-10-01-prn1.facebook.com',
              'www-slb-11-12-prn1.facebook.com',
              's-static.ak.fbcdn.net'}
 
 ---***---
-p = s:option(Flag, "check_enabled", translate("Periodically check the Facebook IPs list?"))
+p = s:taboption("ip", Flag, "check_enabled", translate("Periodically check and remove deprecated IP?"))
 p:depends('enabled', '1')
-p = s:option(ListValue, "day", translate("Day"))
+p = s:taboption("ip", ListValue, "day", translate("Day"))
 p:depends('check_enabled', '1')
 local weekdays = {{'Sun', 'Sunday'},
                   {'Mon', 'Monday'},
@@ -117,19 +120,22 @@ end
 ---***---
 s = m:section(NamedSection, "google", "oauth_services", "Google",
               translate("You can register your own Google app and use its parameters here."))
-s:option(SerFlag, "enabled", translate("Enabled?"))
+s:tab("general", translate("General settings"))
+s:tab("ip", translate("Service IP addresses"))
 
-p = s:option(Value, "app_id", "App ID/ Client ID")
+s:taboption("general", SerFlag, "enabled", translate("Enabled?"))
+
+p = s:taboption("general", Value, "app_id", "App ID/ Client ID")
 p:depends('enabled', '1')
 p.default = '242929894222-3909mjqkmgcdo9ro6mr91aiod083g834.apps.googleusercontent.com'
 
-p = s:option(Value, "redirect_uri", "Redirect URI",
+p = s:taboption("general", Value, "redirect_uri", "Redirect URI",
              translate("This URI has to be match the one you registered for your Google app.<br/>\
              Have to be HTTPS. Its domain/IP must be included in the list below."))
 p:depends('enabled', '1')
 p.default = 'https://kikiauth.appspot.com/google'
 
-p = s:option(IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
+p = s:taboption("ip", IPList, "ips", "Google IPs",translate("List of Google IPs used for the gateway to open the traffic correctly while using Google OAuth."))
 p:depends('enabled', '1')
 p.default = {'accounts.l.google.com',
              'accounts-cctld.l.google.com',
@@ -138,16 +144,16 @@ p.default = {'accounts.l.google.com',
              'ssl.gstatic.com',
              'kikiauth.appspot.com'}
 
-p = s:option(Flag, "check_enabled", translate("Periodically check the Google IPs list?"))
+p = s:taboption("ip", Flag, "check_enabled", translate("Periodically check and remove deprecated IP?"))
 p:depends('enabled', '1')
 
-p = s:option(ListValue, "day", translate("Day"))
+p = s:taboption("ip", ListValue, "day", translate("Day"))
 p:depends('check_enabled', '1')
 for _, d in ipairs(weekdays) do
 	p:value(d[1], translate(d[2]))
 end
 
-p = s:option(ListValue, "time", translate("Time"))
+p = s:taboption("ip", ListValue, "time", translate("Time"))
 p:depends('check_enabled', '1')
 for i = 0, 23 do
 	p:value("%02d" % {i}, tostring(i))

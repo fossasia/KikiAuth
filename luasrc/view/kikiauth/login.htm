@@ -1,5 +1,5 @@
 <%
-local uci = require "luci.model.uci".cursor()
+local uci = luci.model.uci.cursor()
 local enabled_services = {}
 local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
 function check_service_enabled(sect)
@@ -36,28 +36,23 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 	</script>
 
 	<script type="text/javascript">
-	var width = screen.width/2 + 50,height = screen.height/2,left = screen.width/4,top = screen.height/4;
+	var width = screen.width/2 + 50;
+	var height = screen.height/2;
+	var left = screen.width/4;
+	var top = screen.height/4;
 	var gw_address = getParameterByName("gw_address");
 	var gw_port = getParameterByName("gw_port");
 	var authServerAddress = "http://" + gw_address + "/cgi-bin/luci/kikiauth/";
 
-	function build_uri(path, appID, redirect_uri, response_type, state, scope){
-		var queryParams;
-		if (scope != '') {
-			queryParams = ['client_id=' + appID,
-			               'redirect_uri=' + redirect_uri,
-			               'response_type=' + response_type,
-			               'state=' + state,
-			               'scope=' + scope];
-		} else {
-			queryParams = ['client_id=' + appID,
+	function build_uri(path, appID, redirect_uri, response_type, state, scope) {
+		var queryParams = ['client_id=' + appID,
 			               'redirect_uri=' + redirect_uri,
 			               'response_type=' + response_type,
 			               'state=' + state];
+		if (scope != '') {
+			queryParams.push('scope=' + scope);
 		}
-		var query = queryParams.join('&');
-		var url = path + query;
-		return url;
+		return path + queryParams.join('&');
 	}
 
 	function googleOAuth(){
@@ -65,21 +60,23 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 		var appID = '<%= gg_app_id %>';
 		var redirect_uri = '<%= gg_redirect_uri %>';
 		var response_type = 'token';
+		/* We use state to store WifiDog address to redirect to later */
 		var state = gw_address + ':' + gw_port;
 		var scope = 'https://www.googleapis.com/auth/userinfo.email';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 
-	function facebookOAuth(){
+	function facebookOAuth() {
 		var path = 'https://www.facebook.com/dialog/oauth?';
 		var appID = '<%= fb_app_id %>';
 		var redirect_uri = '<%= fb_redirect_uri %>';
 		var response_type = 'token';
+		/* We use state to store WifiDog address to redirect to later */
 		var state = gw_address + ':' + gw_port;
 	 	var scope = '';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 	</script>
 </head>

@@ -64,19 +64,31 @@ function get_enabled_OAuth_service_list()
 end
 
 function find_and_add_new_IP(service)
+	local dynamic_domains = {}  -- List of domains which has IP changing by time.
 	if service == "facebook" then
-		local sys = require "luci.sys"
-		local ips = get_oauth_ip_list(service)
-		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
-		local ping_ip = luci.util.trim(output):sub(1, -2)
-		if not luci.util.contains(ips, ping_ip) then
-			table.insert(ips, ping_ip)
-		end
-		local uci = luci.model.uci.cursor()
-		uci:set_list("kikiauth", service, "ips", ips)
-		uci:save("kikiauth")
-		uci:commit("kikiauth")
+		dynamic_domains = {'www.facebook.com', 's-static.ak.fbcdn.net'}
 	end
+	-- Currently, just Facebook has variable IPs. Other services will be defined later.
+
+	local ips = get_oauth_ip_list(service)
+	for _, d in ipairs(dynamic_domains) do
+		local output = luci.sys.exec("ping -c 1 %s | grep 'bytes from' | awk '{print $4}'" % {d})
+		-- The output is like "77.77.77.77:"
+		-- Note that this is the output of ping command on OpenWrt. On other distro (Ubuntu),
+		-- it may be different.
+		if output then
+			local ping_ip = luci.util.trim(output):sub(1, -2)
+			if not luci.util.contains(ips, ping_ip) then
+				table.insert(ips, ping_ip)
+				iptables_kikiauth_add_iprule(ping_ip)
+			end
+		end
+	end
+
+	local uci = luci.model.uci.cursor()
+	uci:set_list("kikiauth", service, "ips", ips)
+	uci:save("kikiauth")
+	uci:commit("kikiauth")
 end
 
 -- the following code is for checking the enabled OAuth service IPs list.

@@ -9,12 +9,22 @@ var params = {}, queryString = location.hash.substring(1), regex = /([^&=]+)=([^
 while (m = regex.exec(queryString)) {
     params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
 }
-var gw_address = params['state'];
+/* The state param contain WfiFiDog gateway address and domain of Google Apps (if exist).
+ * It is like "192.168.2.1:2060|mbm.vn" */
+var segs = params['state'].split('|')
+var gw_address = segs[0];
+var domain = (segs.length > 1) ? segs[1] : null;
 var auth_address = gw_address.split(":")[0];
 var loginPageUrl = "http://" + auth_address + "/cgi-bin/luci/kikiauth/login/";
 //check the query string to give a proper response
 if (params['access_token'] != null) {
-	accessToken = 'google_' + params['access_token']
+	accessToken = 'google_'
+	if (domain) {
+		accessToken += domain + '__'
+		/* The access_token is like
+		 * google_mbm.vn__xxxxxxxxxxx */
+	}
+	accessToken += params['access_token']
 	window.open("http://" + gw_address + "/wifidog/auth?token=" + accessToken, "_parent");
 }
 else if (params['error'] != null) {window.open(loginPageUrl, "_parent");}

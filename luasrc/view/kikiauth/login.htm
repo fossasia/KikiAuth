@@ -1,7 +1,8 @@
 <%
-local uci = require "luci.model.uci".cursor()
+local uci = luci.model.uci.cursor()
 local enabled_services = {}
 local fb_app_id, fb_redirect_uri, gg_app_id, gg_redirect_uri
+local gapps_domains = nil
 function check_service_enabled(sect)
 	if sect.enabled == '1' then
 		local name = sect['.name']
@@ -17,10 +18,37 @@ function check_service_enabled(sect)
 end
 
 uci:foreach("kikiauth", "oauth_services", check_service_enabled)
+-- Add Google Apps domain
+if luci.util.contains(enabled_services, 'google') then
+	local googleall = uci:get_bool("kikiauth", "google", "googleall")
+	if not googleall then
+		-- If googleall option is NO, we get Google Apps domains
+		gapps_domains = uci:get_list("kikiauth", "google", "googleapps")
+	end
+end
 %>
 <html>
 <head>
 <title>Please choose one service to login</title>
+	<style>
+	div#main {
+		width: 400px;
+		height: 300px;
+		margin: auto;
+	}
+	div#mainservice, div#googleservice {
+		text-align: center;
+		margin-top: 30px;
+	}
+
+	ul#googleapps {
+		list-style-type:none;
+		padding-left: 0
+	}
+	ul#googleapps li {
+		margin-bottom: 10px
+	}
+	</style>
 	<script>
 	function getParameterByName(name){
 		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
@@ -36,64 +64,83 @@ uci:foreach("kikiauth", "oauth_services", check_service_enabled)
 	</script>
 
 	<script type="text/javascript">
-	var width = screen.width/2 + 50,height = screen.height/2,left = screen.width/4,top = screen.height/4;
+	var width = screen.width/2 + 50;
+	var height = screen.height/2;
+	var left = screen.width/4;
+	var top = screen.height/4;
 	var gw_address = getParameterByName("gw_address");
 	var gw_port = getParameterByName("gw_port");
 	var authServerAddress = "http://" + gw_address + "/cgi-bin/luci/kikiauth/";
 
-	function build_uri(path, appID, redirect_uri, response_type, state, scope){
-		var queryParams;
-		if (scope != '') {
-			queryParams = ['client_id=' + appID,
-			               'redirect_uri=' + redirect_uri,
-			               'response_type=' + response_type,
-			               'state=' + state,
-			               'scope=' + scope];
-		} else {
-			queryParams = ['client_id=' + appID,
+	function build_uri(path, appID, redirect_uri, response_type, state, scope) {
+		var queryParams = ['client_id=' + appID,
 			               'redirect_uri=' + redirect_uri,
 			               'response_type=' + response_type,
 			               'state=' + state];
+		if (scope != '') {
+			queryParams.push('scope=' + scope);
 		}
-		var query = queryParams.join('&');
-		var url = path + query;
-		return url;
+		return path + queryParams.join('&');
 	}
 
-	function googleOAuth(){
+	function googleOAuth(domain) {
 		var path = 'https://accounts.google.com/o/oauth2/auth?';
 		var appID = '<%= gg_app_id %>';
 		var redirect_uri = '<%= gg_redirect_uri %>';
 		var response_type = 'token';
+		/* We use state to store WifiDog address to redirect to later */
 		var state = gw_address + ':' + gw_port;
+
+		if (domain != '' && domain != 'all') {
+			state += '|' + domain
+		}
 		var scope = 'https://www.googleapis.com/auth/userinfo.email';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 
-	function facebookOAuth(){
+	function facebookOAuth() {
 		var path = 'https://www.facebook.com/dialog/oauth?';
 		var appID = '<%= fb_app_id %>';
 		var redirect_uri = '<%= fb_redirect_uri %>';
 		var response_type = 'token';
+		/* We use state to store WifiDog address to redirect to later */
 		var state = gw_address + ':' + gw_port;
 	 	var scope = '';
 		var url = build_uri(path, appID, redirect_uri, response_type, state, scope);
-		window.open(url,"_parent");
+		window.open(url, "_parent");
 	}
 	</script>
 </head>
 	<body>
+	<div id='main'>
+	<div id='mainservice'>
 	<%
 	local g = "<input type='button' value='Login with Google' onClick='googleOAuth()'/>"
 	local f = "<input type='button' value='Login with Facebook' onClick='facebookOAuth()' />"
 	for i, n in ipairs(enabled_services) do
 		if n == 'facebook' then
 			write(f)
-		elseif n ==  'google' then
+		elseif n ==  'google' and gapps_domains == nil then
 			write(g)
+		elseif gapps_domains ~= nil then
+		%>
+	</div>
+	<div id='googleservice'>
+		Login with Google Apps domain:
+		<ul id='googleapps'>
+		<%
+			for _, d in ipairs(gapps_domains) do
+				write("<li><input type='button' value='%s' onClick=\"googleOAuth('%s')\"/></li>"
+				      % {d, d})
+			end
+		%>
+		</ul>
+	</div>
+		<%
 		end
 	end
 	%>
+	</div>
 	</body>
 </html>

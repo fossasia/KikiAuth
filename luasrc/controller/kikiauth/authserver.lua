@@ -1,5 +1,7 @@
 module("luci.controller.kikiauth.authserver", package.seeall)
 
+require "luci.json"
+
 -- Name of iptable chain, in which we will open access
 -- to OAuth services (Facebook, Google).
 -- This chain will be in NAT table and FILTER table.
@@ -62,19 +64,34 @@ function get_enabled_OAuth_service_list()
 end
 
 function find_and_add_new_IP(service)
+	local dynamic_domains = {}  -- List of domains which has IP changing by time.
 	if service == "facebook" then
-		local sys = require "luci.sys"
-		local ips = get_oauth_ip_list(service)
-		local output = sys.exec("ping -c 1 www.facebook.com | grep 'bytes from' | awk '{print $4}'")
-		local ping_ip = luci.util.trim(output):sub(1, -2)
-		if not luci.util.contains(ips, ping_ip) then
-			table.insert(ips, ping_ip)
-		end
-		local uci = luci.model.uci.cursor()
-		uci:set_list("kikiauth", service, "ips", ips)
-		uci:save("kikiauth")
-		uci:commit("kikiauth")
+		dynamic_domains = {'www.facebook.com', 's-static.ak.fbcdn.net'}
 	end
+	-- Currently, just Facebook has variable IPs. Other services will be defined later.
+
+	-- No domain, do nothing
+	if dynamic_domains == {} then return end
+
+	local ips = get_oauth_ip_list(service)
+	for _, d in ipairs(dynamic_domains) do
+		local output = luci.sys.exec("ping -c 1 %s | grep 'bytes from' | awk '{print $4}'" % {d})
+		-- The output is like "77.77.77.77:"
+		-- Note that this is the output of ping command on OpenWrt. On other distro (Ubuntu),
+		-- it may be different.
+		if output then
+			local ping_ip = luci.util.trim(output):sub(1, -2)
+			if not luci.util.contains(ips, ping_ip) then
+				table.insert(ips, ping_ip)
+				iptables_kikiauth_add_iprule(ping_ip)
+			end
+		end
+	end
+
+	local uci = luci.model.uci.cursor()
+	uci:set_list("kikiauth", service, "ips", ips)
+	uci:save("kikiauth")
+	uci:commit("kikiauth")
 end
 
 -- the following code is for checking the enabled OAuth service IPs list.
@@ -109,7 +126,8 @@ function check_ips(service)
 	local newips = {}
 	for _, ip in ipairs(ips) do
 		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
-		if output and output:find("64") then table.insert(newips, ip) end
+		if output and output:find("64") then table.insert(newips, ip)
+		else iptables_kikiauth_delete_iprule(ip) end
 	end
 	uci:set_list("kikiauth", service, "ips", newips)
 	uci:save("kikiauth")
@@ -146,22 +164,68 @@ function action_auth_response_to_gw()
 	local token = luci.http.formvalue("token")
 	local url = nil
 	local response = ''
+	local actual_token = ''
+	local domain = nil
+	local resp = nil
 
+	-- token will be like 'facebook_xxxxxxxxx' or 'google_xxxxxxx'
+	-- or 'google_mbm.vn__xxxxxxx' (with Google Apps domain)
 	if token:startswith('facebook_') then
-		url = "https://graph.facebook.com/me?access_token=%s" % {token:sub(10)}
+		actual_token = token:sub(10)
+		url = "https://graph.facebook.com/me?access_token=%s" % {actual_token}
 	elseif token:startswith('google_') then
-		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {token:sub(8)}
+		local rest = token:sub(8)
+		domain = rest:match('^([%-a-z0-9%.]+%.[a-z]+)__')
+		if domain then
+			actual_token = rest:sub(domain:len() + 3)
+		else
+			actual_token = rest
+		end
+		url = "https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s" % {actual_token}
 	end
 
 	if url then
 		response = luci.util.exec("wget --no-check-certificate -qO- %s" % {url})
 	end
 
-	if response and string.find(response, "id", 1) ~= nil then
-		luci.http.write("Auth: 1")
-	else
+	if not response or response == "" then
 		luci.http.write("Auth: 6")
+		return
 	end
+
+	if token:startswith('facebook_') and string.find(response, "id", 1) ~= nil then
+		luci.http.write("Auth: 1")
+		return
+	end
+
+	if token:startswith('google_') and belongto_googleapps_domain(response, domain) then
+		luci.http.write("Auth: 1")
+		return
+	end
+
+	luci.http.write("Auth: 6")
+	return
+end
+
+-- Check if the logged in email belongs to a Google Apps domain
+function belongto_googleapps_domain(response, domain)
+	-- If domain is not given, accept
+	if domain == nil then return true end
+
+	-- Get the part behind 'www.'
+	if domain:startswith('www.') then
+		domain = domain:sub(5)
+	end
+	local resp = luci.json.decode(response)
+	if not resp then return false end
+
+	local email = resp.email
+	local verified_email = resp.verified_email
+
+	if not verified_email then return false end
+
+	local d = email:sub(email:find('@') + 1)
+	return (d == domain)
 end
 
 -- Get IP list for an OAuth service.

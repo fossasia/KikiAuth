@@ -30,6 +30,25 @@ end
 <html>
 <head>
 <title>Please choose one service to login</title>
+	<style>
+	div#main {
+		width: 400px;
+		height: 300px;
+		margin: auto;
+	}
+	div#mainservice, div#googleservice {
+		text-align: center;
+		margin-top: 30px;
+	}
+
+	ul#googleapps {
+		list-style-type:none;
+		padding-left: 0
+	}
+	ul#googleapps li {
+		margin-bottom: 10px
+	}
+	</style>
 	<script>
 	function getParameterByName(name){
 		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
@@ -93,6 +112,8 @@ end
 	</script>
 </head>
 	<body>
+	<div id='main'>
+	<div id='mainservice'>
 	<%
 	local g = "<input type='button' value='Login with Google' onClick='googleOAuth()'/>"
 	local f = "<input type='button' value='Login with Facebook' onClick='facebookOAuth()' />"
@@ -103,8 +124,10 @@ end
 			write(g)
 		elseif gapps_domains ~= nil then
 		%>
-		<br/>Login with Google Apps domain:
-		<ul>
+	</div>
+	<div id='googleservice'>
+		Login with Google Apps domain:
+		<ul id='googleapps'>
 		<%
 			for _, d in ipairs(gapps_domains) do
 				write("<li><input type='button' value='%s' onClick=\"googleOAuth('%s')\"/></li>"
@@ -112,9 +135,11 @@ end
 			end
 		%>
 		</ul>
+	</div>
 		<%
 		end
 	end
 	%>
+	</div>
 	</body>
 </html>

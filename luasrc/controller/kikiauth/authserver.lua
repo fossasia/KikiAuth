@@ -70,6 +70,9 @@ function find_and_add_new_IP(service)
 	end
 	-- Currently, just Facebook has variable IPs. Other services will be defined later.
 
+	-- No domain, do nothing
+	if dynamic_domains == {} then return end
+
 	local ips = get_oauth_ip_list(service)
 	for _, d in ipairs(dynamic_domains) do
 		local output = luci.sys.exec("ping -c 1 %s | grep 'bytes from' | awk '{print $4}'" % {d})

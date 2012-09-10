@@ -126,7 +126,8 @@ function check_ips(service)
 	local newips = {}
 	for _, ip in ipairs(ips) do
 		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
-		if output and output:find("64") then table.insert(newips, ip) end
+		if output and output:find("64") then table.insert(newips, ip)
+		else iptables_kikiauth_delete_iprule(ip) end
 	end
 	uci:set_list("kikiauth", service, "ips", newips)
 	uci:save("kikiauth")

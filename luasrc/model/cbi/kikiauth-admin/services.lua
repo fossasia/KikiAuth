@@ -115,7 +115,7 @@ local weekdays = {{'Sun', 'Sunday'},
 for _, d in ipairs(weekdays) do
 	p:value(d[1], translate(d[2]))
 end
-p = s:option(ListValue, "time", translate("Time"))
+p = s:taboption("ip", ListValue, "time", translate("Time"))
 p:depends('check_enabled', '1')
 for i = 0, 23 do
 	p:value("%02d" % {i}, tostring(i))

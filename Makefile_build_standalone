@@ -24,7 +24,7 @@ define Package/$(PKG_NAME)/description
 endef
 
 define Build/Prepare
-	for d in luasrc; do \
+	for d in luasrc root; do \
 	  if [ -d ./$$$$d ]; then \
 	    mkdir -p $(PKG_BUILD_DIR)/$$$$d; \
 		$(CP) ./$$$$d/* $(PKG_BUILD_DIR)/$$$$d/; \

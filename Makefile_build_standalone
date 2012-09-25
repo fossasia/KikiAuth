@@ -16,7 +16,7 @@ define Package/$(PKG_NAME)
   CATEGORY:=LuCI
   SUBMENU:=3rd Party
   TITLE:=Splash login with OAuth
-  DEPENDS:=wget wifidog
+  DEPENDS:=luci-lib-json wget wifidog
 endef
 
 define Package/$(PKG_NAME)/description

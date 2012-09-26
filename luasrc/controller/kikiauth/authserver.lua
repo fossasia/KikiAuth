@@ -67,8 +67,9 @@ function find_and_add_new_IP(service)
 	local dynamic_domains = {}  -- List of domains which has IP changing by time.
 	if service == "facebook" then
 		dynamic_domains = {'www.facebook.com', 's-static.ak.fbcdn.net'}
+	elseif service == "google" then
+		dynamic_domains = {'www.google.com'}
 	end
-	-- Currently, just Facebook has variable IPs. Other services will be defined later.
 
 	-- No domain, do nothing
 	if dynamic_domains == {} then return end

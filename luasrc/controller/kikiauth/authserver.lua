@@ -1,11 +1,14 @@
 module("luci.controller.kikiauth.authserver", package.seeall)
 
 require "luci.json"
+local fs = require("nixio.fs")
 
 -- Name of iptable chain, in which we will open access
 -- to OAuth services (Facebook, Google).
 -- This chain will be in NAT table and FILTER table.
 local chain = "KikiAuth"
+local temp_ip_file = '/tmp/kikiauth_ips'
+local iplist_threshold = 5
 
 
 -- === String utilities ====
@@ -45,8 +48,8 @@ function action_say_pong()
 	local enabled_OAuth_service_list = get_enabled_OAuth_service_list()
 	check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
 	--find and add new ip
-	for i=1, #enabled_OAuth_service_list do
-		find_and_add_new_IP(enabled_OAuth_service_list[i])
+	for _, service in ipairs(enabled_OAuth_service_list) do
+		find_and_add_new_IP(service)
 	end
 end
 
@@ -75,6 +78,7 @@ function find_and_add_new_IP(service)
 	if dynamic_domains == {} then return end
 
 	local ips = get_oauth_ip_list(service)
+	local updated = false
 	for _, d in ipairs(dynamic_domains) do
 		local output = luci.sys.exec("ping -c 1 %s | grep 'bytes from' | awk '{print $4}'" % {d})
 		-- The output is like "77.77.77.77:"
@@ -85,34 +89,55 @@ function find_and_add_new_IP(service)
 			if not luci.util.contains(ips, ping_ip) then
 				table.insert(ips, ping_ip)
 				iptables_kikiauth_add_iprule(ping_ip)
+				updated = true
 			end
 		end
 	end
 
-	local uci = luci.model.uci.cursor()
-	uci:set_list("kikiauth", service, "ips", ips)
-	uci:save("kikiauth")
-	uci:commit("kikiauth")
+	-- If there is no new IP, stop the function here
+	if not updated then
+		return
+	end
+	-- Otherwise, store the IPs
+	store_ips(service, ips)
+end
+
+function store_ips(service, ips)
+	-- Store the IP list to RAM (/tmp folder) first.
+	-- We should not write to /etc/ too frequently
+	-- because this memory is easy to be worn out.
+	fs.writefile(temp_ip_file..service, table.concat(ips, ' '))
+
+	-- We will sometimes update the IP list in /etc/config/kikiauth file.
+	-- Use use random number to decide if we will update the file.
+	math.randomseed(os.time())  -- We have to drop seed, or the first generated number will always be 85!
+	local n = math.random(100)
+	if n > 40 and n < 60 then
+		local uci = luci.model.uci.cursor()
+		uci:set_list("kikiauth", service, "ips", ips)
+		uci:save("kikiauth")
+		uci:commit("kikiauth")
+	end
 end
 
 -- the following code is for checking the enabled OAuth service IPs list.
 -- It first get out the day and time in the settings, and then,
 -- if it's time to check it will check.
 function check_ip_list_of_enabled_OAuth_services(enabled_OAuth_service_list)
-	for i = 1, # enabled_OAuth_service_list do
+	for _, service in ipairs(enabled_OAuth_service_list) do
 		local uci = require "luci.model.uci".cursor()
-		local check_enabled = uci:get("kikiauth", enabled_OAuth_service_list[i], "check_enabled")
+		local check_enabled = uci:get("kikiauth", service, "check_enabled")
 		if check_enabled ~= nil then
-			local day, time, search_pattern
-			day = uci:get("kikiauth", enabled_OAuth_service_list[i], "day")
-			time= uci:get("kikiauth", enabled_OAuth_service_list[i], "time")
+			local day = uci:get("kikiauth", service, "day")
+			local time = uci:get("kikiauth", service, "time")
 			-- search_pattern is for 'time' checking. In this situation,
 			-- we want to check if the current time and
 			-- the one in the setting is different to each other within the range of 3 minutes.
-			search_pattern = time .. ":0[012]"
+			local search_pattern = time .. ":0[012]"
 			--check if the current day and time match the ones in the settings.
-			if string.find(os.date(),day) ~= nil or day == "Every" and string.find(os.date(), search_pattern) ~= nil then
-				 check_ips(enabled_OAuth_service_list[i])
+			if string.find(os.date(), day) ~= nil or day == "Every"
+			and string.find(os.date(), search_pattern) ~= nil then
+				check_valid_ips(service)
 			end
 		end
     end
@@ -120,19 +145,18 @@ end
 
 -- Check a particular service IPs list
 -- @param service: "facebook" or "google" ...
-function check_ips(service)
-	local uci = luci.model.uci.cursor()
-	local ips = uci:get_list("kikiauth", service, "ips")
-	local sys = require "luci.sys"
+-- Invalid IP will be removed.
+function check_valid_ips(service)
+	local ips = get_oauth_ip_list(service)
 	local newips = {}
 	for _, ip in ipairs(ips) do
 		local output = luci.sys.exec("ping -c 2 %s | grep '64 bytes' | awk '{print $1}'" % {ip})
 		if output and output:find("64") then table.insert(newips, ip)
 		else iptables_kikiauth_delete_iprule(ip) end
 	end
-	uci:set_list("kikiauth", service, "ips", newips)
-	uci:save("kikiauth")
-	uci:commit("kikiauth")
+	if #ips ~= #newips then
+		store_ips(service, ips)
+	end
 end
 
 function action_redirect_to_success_page()
@@ -229,12 +253,32 @@ function belongto_googleapps_domain(response, domain)
 	return (d == domain)
 end
 
--- Get IP list for an OAuth service.
--- @param service "facebook" or "google"
-function get_oauth_ip_list(service)
+-- Get IP list from temp file
+function ip_list_from_temp(service)
+	local filepath = temp_ip_file..service
+	if not fs.access(filepath) then
+		return {}
+	end
+	local content = fs.readfile(filepath)
+	return luci.util.split(content, ' ')
+end
+
+function ip_list_from_config(service)
 	local x = luci.model.uci.cursor()
 	local lip = x:get_list('kikiauth', service, 'ips')
 	return to_ip_list(lip)
+end
+
+-- Get IP list for an OAuth service.
+-- @param service "facebook" or "google"
+function get_oauth_ip_list(service)
+	-- Get from /tmp first
+	local ips_temp = ip_list_from_temp(service)
+	-- If this list was populated enough
+	if #ips_temp > iplist_threshold then
+		return ips_temp
+	end
+	return ip_list_from_config(service)
 end
 
 function to_ip_list(mixlist)

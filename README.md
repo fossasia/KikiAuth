@@ -1,4 +1,4 @@
-KikiAuth (abandoned)
+KikiAuth
 ========
 
 KikiAuth is based on LuCI, providing an alternative to Auth Server for WifiDog.
@@ -7,7 +7,7 @@ KikiAuth aims to support authentication via OAuth services (Google, Facebook, Tw
 Important note
 --------------
 
-The project is abandoned, because of these obstacles:
+The project is halted, because of these obstacles:
 
 - Entire Facebook website is on HTTPS. It means that if we let user to login to Facebook, we have to open all traffic to Facebook website. It means that even before logging in our splash screen, user still can use Facebook, Google. These sites are open to allow OAuth login.
 
